@@ -1,0 +1,313 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Nomino a una Compañera — Mondou Champions</title>
+<link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:wght@400;600&family=DM+Sans:wght@300;400;500;600&display=swap" rel="stylesheet">
+<script src="https://www.gstatic.com/firebasejs/10.14.1/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.14.1/firebase-firestore-compat.js"></script>
+<script src="mc_firebase.js"></script>
+<script src="mc_core.js"></script>
+<style>
+:root{
+  --gold:#C9963B;--gold-pale:#FEF9EC;
+  --black:#0D0D0D;--gray2:#555;--gray3:#888;
+  --off:#F5F4F0;--white:#fff;
+  --purple:#7C3AED;--purple-l:#F3E8FF;
+  --green:#1D9E75;--green-l:#E1F5EE;
+}
+*{box-sizing:border-box;margin:0;padding:0}
+body{font-family:'DM Sans',sans-serif;background:var(--off);min-height:100vh;padding-bottom:5rem}
+.hdr{background:linear-gradient(135deg,#713F12,var(--gold));padding:1.75rem 1.25rem 1.5rem;position:relative}
+.hdr::after{content:'';position:absolute;top:0;left:0;right:0;height:3px;background:linear-gradient(90deg,#E8C97E,#fff,#E8C97E)}
+.back{display:inline-flex;align-items:center;gap:5px;color:rgba(255,255,255,.55);font-size:11px;text-decoration:none;font-weight:500;margin-bottom:.75rem}
+.h-eye{font-size:9px;font-weight:600;letter-spacing:.16em;color:rgba(255,255,255,.6);text-transform:uppercase;margin-bottom:.375rem}
+.h-title{font-family:'Cormorant Garamond',serif;font-size:2rem;font-weight:600;color:#fff;line-height:1.1;margin-bottom:.375rem}
+.h-sub{font-size:11.5px;color:rgba(255,255,255,.65)}
+.user-chip{display:inline-flex;align-items:center;gap:7px;background:rgba(255,255,255,.12);border-radius:100px;padding:5px 12px;margin-top:.875rem}
+.uc-dot{width:22px;height:22px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-family:'Cormorant Garamond',serif;font-size:.85rem;font-weight:700;color:#fff}
+.uc-name{font-size:12px;font-weight:600;color:#fff}
+.uc-note{font-size:10px;color:rgba(255,255,255,.6)}
+.body{padding:1.25rem 1.25rem 0}
+.sec-hdr{display:flex;align-items:flex-start;gap:10px;margin-bottom:.875rem}
+.sec-num{width:24px;height:24px;border-radius:50%;background:var(--gold);color:#fff;font-size:11px;font-weight:700;display:flex;align-items:center;justify-content:center;flex-shrink:0}
+.sec-ttl{font-size:14px;font-weight:600;color:var(--black);line-height:1.3}
+.sec-sub{font-size:11px;color:var(--gray3);margin-top:2px}
+.card{background:var(--white);border-radius:14px;padding:1.25rem;box-shadow:0 1px 4px rgba(0,0,0,.06);margin-bottom:.875rem}
+.div{height:.5px;background:linear-gradient(90deg,transparent,#E0DDD6,transparent);margin:1.25rem 0}
+
+/* TEAMMATE GRID */
+.team-grid{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+.tm{
+  border:1.5px solid #E8E6E0;border-radius:12px;
+  padding:.875rem .5rem;text-align:center;
+  cursor:pointer;transition:all .16s;background:var(--off);
+  -webkit-tap-highlight-color:transparent;
+}
+.tm.sel{border-color:var(--gold);background:var(--gold-pale)}
+.tm:active{transform:scale(.96)}
+.tm-av{width:42px;height:42px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-family:'Cormorant Garamond',serif;font-size:1.2rem;font-weight:600;color:#fff;margin:0 auto .5rem;transition:transform .16s}
+.tm.sel .tm-av{transform:scale(1.08)}
+.tm-name{font-size:13px;font-weight:600;color:#333}
+.tm.sel .tm-name{color:var(--gold)}
+.tm-role{font-size:10px;color:var(--gray3);margin-top:2px}
+
+/* REASON LIST */
+.reasons{display:flex;flex-direction:column;gap:7px}
+.reason{
+  display:flex;align-items:center;gap:10px;
+  padding:.75rem 1rem;
+  border:1.5px solid #E8E6E0;border-radius:10px;
+  cursor:pointer;transition:all .16s;background:var(--off);
+  -webkit-tap-highlight-color:transparent;
+}
+.reason.sel{border-color:var(--gold);background:var(--gold-pale)}
+.r-check{
+  width:20px;height:20px;border-radius:5px;border:2px solid #CCC;
+  flex-shrink:0;display:flex;align-items:center;justify-content:center;transition:all .16s;
+}
+.reason.sel .r-check{border-color:var(--gold);background:var(--gold)}
+.reason.sel .r-check::after{content:'✓';font-size:11px;color:#fff;font-weight:700}
+.r-icon{font-size:16px;flex-shrink:0}
+.r-txt{font-size:12.5px;color:#333;flex:1;line-height:1.3}
+
+/* DETAIL */
+textarea{
+  width:100%;border:1.5px solid #E8E6E0;border-radius:10px;
+  padding:.875rem 1rem;font-size:13px;font-family:'DM Sans',sans-serif;
+  color:#333;resize:none;background:var(--off);outline:none;
+  transition:border-color .18s;min-height:80px;
+}
+textarea:focus{border-color:var(--gold);background:var(--white)}
+textarea::placeholder{color:var(--gray3)}
+
+/* PREVIEW */
+.preview{
+  background:var(--black);border-radius:12px;
+  padding:1rem 1.25rem;margin-bottom:.875rem;display:none;
+}
+.preview.show{display:block;animation:up .3s ease}
+.prev-lbl{font-size:9px;font-weight:600;letter-spacing:.14em;color:var(--gray3);text-transform:uppercase;margin-bottom:.625rem}
+.prev-bubble{
+  background:#1A1A1A;border-radius:10px;padding:.75rem 1rem;
+  border-left:3px solid var(--gold);
+}
+.prev-txt{font-size:12px;color:#fff;line-height:1.65;font-style:italic}
+.prev-from{font-size:10.5px;color:var(--gray3);margin-top:.5rem}
+
+.submit-wrap{padding:0 1.25rem}
+.submit-btn{
+  width:100%;background:var(--gold);color:var(--black);
+  border:none;border-radius:12px;padding:1rem;
+  font-size:14px;font-weight:700;font-family:'DM Sans',sans-serif;
+  cursor:pointer;letter-spacing:.04em;transition:all .18s;
+}
+.submit-btn:active{transform:scale(.98)}
+.submit-note{font-size:11px;color:var(--gray3);text-align:center;margin-top:.5rem}
+
+.success{display:none;padding:3.5rem 1.5rem;text-align:center}
+.s-icon{font-size:3.5rem;margin-bottom:1rem}
+.s-title{font-family:'Cormorant Garamond',serif;font-size:2rem;font-weight:600;color:var(--black);margin-bottom:.5rem}
+.s-msg{font-size:13px;color:var(--gray2);line-height:1.6;margin-bottom:1.5rem}
+.s-hl{display:inline-block;background:var(--gold-pale);color:var(--gold);border-radius:12px;padding:.875rem 2rem;font-size:1.1rem;font-weight:700;border:1.5px solid var(--gold)}
+
+@keyframes up{from{opacity:0;transform:translateY(12px)}to{opacity:1;transform:translateY(0)}}
+.anim{animation:up .35s ease both}
+</style>
+</head>
+<body>
+
+<div id="form-screen">
+<div class="hdr">
+  <a class="back" href="menu.html">← Inicio</a>
+  <div class="h-eye">Todo el equipo · Reconocimiento semanal</div>
+  <div class="h-title">Nomino a una<br>Compañera 💛</div>
+  <div class="h-sub">Solo positivo · Una nominación por semana<br>No puedes nominarte a ti misma</div>
+  <div class="user-chip">
+    <div class="uc-dot" id="uc-dot">?</div>
+    <div>
+      <div class="uc-name" id="uc-name">—</div>
+      <div class="uc-note">Esta nominación va a nombre tuyo</div>
+    </div>
+  </div>
+</div>
+
+<div class="body">
+
+<!-- Q1: A QUIÉN -->
+<div class="sec-hdr anim" style="animation-delay:.05s">
+  <div class="sec-num">1</div>
+  <div>
+    <div class="sec-ttl">¿A quién reconoces esta semana?</div>
+    <div class="sec-sub">Solo del equipo de tu sucursal · Diferente cada semana</div>
+  </div>
+</div>
+<div class="card anim" style="animation-delay:.08s">
+  <div class="team-grid" id="team-grid">
+    <!-- Generado por JS desde la sesión -->
+  </div>
+</div>
+
+<div class="div"></div>
+
+<!-- Q2: POR QUÉ -->
+<div class="sec-hdr anim" style="animation-delay:.1s">
+  <div class="sec-num">2</div>
+  <div>
+    <div class="sec-ttl">¿Por qué la reconoces?</div>
+    <div class="sec-sub">Elige la razón que mejor aplique esta semana</div>
+  </div>
+</div>
+<div class="card anim" style="animation-delay:.12s">
+  <div class="reasons" id="reasons">
+    <div class="reason" onclick="pickReason(this,'Ayudó a una clienta que no era suya')"><div class="r-check"></div><div class="r-icon">🤝</div><div class="r-txt">Ayudó a una clienta que no era suya</div></div>
+    <div class="reason" onclick="pickReason(this,'Me apoyó cuando lo necesité')"><div class="r-check"></div><div class="r-icon">💛</div><div class="r-txt">Me apoyó cuando lo necesité</div></div>
+    <div class="reason" onclick="pickReason(this,'Mantuvo el ambiente positivo toda la semana')"><div class="r-check"></div><div class="r-icon">✨</div><div class="r-txt">Mantuvo el ambiente positivo toda la semana</div></div>
+    <div class="reason" onclick="pickReason(this,'Dio un servicio excepcional')"><div class="r-check"></div><div class="r-icon">💎</div><div class="r-txt">Dio un servicio excepcional</div></div>
+    <div class="reason" onclick="pickReason(this,'Llegó puntual y lista toda la semana')"><div class="r-check"></div><div class="r-icon">⏰</div><div class="r-txt">Llegó puntual y lista toda la semana</div></div>
+    <div class="reason" onclick="pickReason(this,'Vendió una membresía increíble')"><div class="r-check"></div><div class="r-icon">💳</div><div class="r-txt">Vendió una membresía increíble</div></div>
+    <div class="reason" onclick="pickReason(this,'Resolvió una situación difícil con una clienta')"><div class="r-check"></div><div class="r-icon">🎯</div><div class="r-txt">Resolvió una situación difícil con una clienta</div></div>
+    <div class="reason" onclick="pickReason(this,'Trajo modelo y se esforzó por aprender más')"><div class="r-check"></div><div class="r-icon">📸</div><div class="r-txt">Trajo modelo y se esforzó por aprender más</div></div>
+    <div class="reason" onclick="pickReason(this,'Otra razón especial')"><div class="r-check"></div><div class="r-icon">🌟</div><div class="r-txt">Otra razón especial…</div></div>
+  </div>
+</div>
+
+<div class="div"></div>
+
+<!-- Q3: CUÉNTANOS -->
+<div class="sec-hdr anim" style="animation-delay:.14s">
+  <div class="sec-num">3</div>
+  <div>
+    <div class="sec-ttl">Cuéntanos en una línea qué hizo</div>
+    <div class="sec-sub">Esto se lee en voz alta el día de resultados 🎤</div>
+  </div>
+</div>
+<div class="card anim" style="animation-delay:.16s">
+  <textarea id="detail" rows="3"
+    placeholder="Ej: 'Adri se quedó tiempo extra para terminar un color complicado y la clienta quedó encantada' ✨"
+    oninput="updatePreview()"></textarea>
+</div>
+
+<div class="div"></div>
+
+<!-- PREVIEW -->
+<div class="preview" id="preview">
+  <div class="prev-lbl">Así se verá tu nominación 👀</div>
+  <div class="prev-bubble">
+    <div class="prev-txt" id="prev-txt">—</div>
+    <div class="prev-from" id="prev-from">—</div>
+  </div>
+</div>
+
+</div><!-- /body -->
+
+<div class="submit-wrap anim" style="animation-delay:.18s">
+  <button class="submit-btn" onclick="submit()">Enviar nominación →</button>
+  <div class="submit-note">Las nominaciones se leen en voz alta el día de resultados · Solo positivo siempre 💛</div>
+</div>
+</div><!-- /form-screen -->
+
+<!-- SUCCESS -->
+<div class="success" id="success-screen">
+  <div class="s-icon">💛</div>
+  <div class="s-title anim">¡Nominación enviada!</div>
+  <div class="s-msg anim" style="animation-delay:.1s">
+    Tu reconocimiento llegará a <strong id="s-nominee">—</strong>.<br>
+    Se leerá en voz alta el día de resultados.
+  </div>
+  <div class="s-hl anim" style="animation-delay:.2s">+50 pts de equipo para ella 🌟</div>
+</div>
+
+<script>
+let sess     = null;
+let nominee  = null;
+let reason   = null;
+
+// ── Init async — configura chip y renderiza compañeras ────────
+(async () => {
+  await MC_Users.init();
+  sess = MC_Session.require();
+  if (!sess) return;
+
+  // Anti-reenvío: verificar en Firestore si ya nominó esta semana
+  const yaVotó = await MC_DB.hasNom(sess.name);
+  if (yaVotó) {
+    document.getElementById('form-screen').style.display = 'none';
+    const sc = document.getElementById('success-screen');
+    sc.style.display = 'block';
+    document.querySelector('.s-title').textContent = '¡Ya enviaste tu nominación!';
+    document.querySelector('.s-msg').innerHTML = 'Tu nominación de esta semana ya está registrada.<br>No puedes volver a cambiarla en el mismo período.';
+    document.getElementById('s-nominee').textContent = '';
+    return;
+  }
+
+  const dot = document.getElementById('uc-dot');
+  dot.textContent      = sess.name[0];
+  dot.style.background = sess.color;
+  document.getElementById('uc-name').textContent = sess.name;
+
+  const noms = MC_UI.nominees(sess.name, sess.salon);
+  const ROLES = { A:'Estilista', B:'Operación', ADMIN:'Admin' };
+  document.getElementById('team-grid').innerHTML = noms.length
+    ? noms.map(p =>
+        `<div class="tm" onclick="pickNominee('${p.name}','${p.color}')" id="tm-${p.name}">
+          <div class="tm-av" style="background:${p.color}">${p.name[0]}</div>
+          <div class="tm-name">${p.name}</div>
+          <div class="tm-role">${ROLES[p.rol] || p.rol}</div>
+        </div>`).join('')
+    : '<p style="color:var(--gray3);font-size:12px;text-align:center;padding:.5rem">No hay compañeras disponibles en tu sucursal.</p>';
+})();
+
+// ── Funciones globales ────────────────────────────────────────
+function pickNominee(name, color) {
+  nominee = name;
+  document.querySelectorAll('.tm').forEach(e => e.classList.remove('sel'));
+  const el = document.getElementById('tm-' + name);
+  if (el) el.classList.add('sel');
+  updatePreview();
+}
+function pickReason(el, text) {
+  reason = text;
+  document.querySelectorAll('.reason').forEach(e => e.classList.remove('sel'));
+  el.classList.add('sel');
+  updatePreview();
+}
+function updatePreview() {
+  const detail = document.getElementById('detail').value.trim();
+  const prev   = document.getElementById('preview');
+  if (nominee && reason) {
+    prev.classList.add('show');
+    document.getElementById('prev-txt').textContent  = `"${detail || `[${reason}]`}"`;
+    document.getElementById('prev-from').textContent = `— ${sess?.name} sobre ${nominee}`;
+  } else {
+    prev.classList.remove('show');
+  }
+}
+async function submit() {
+  if (!nominee) { alert('Por favor elige a quién nominas.'); return; }
+  if (!reason)  { alert('Por favor elige la razón de tu nominación.'); return; }
+  const btn = document.querySelector('.submit-btn');
+  btn.disabled = true; btn.textContent = 'Guardando...';
+  const data = {
+    from: sess.name, salon: sess.salon,
+    nominee, reason,
+    detail: document.getElementById('detail').value.trim(),
+    ts: new Date().toISOString()
+  };
+  try {
+    await MC_DB.saveNom(data);
+  } catch(e) {
+    btn.disabled = false; btn.textContent = 'Enviar nominación →';
+    alert('Error al guardar. Verifica tu conexión e intenta de nuevo.');
+    return;
+  }
+  MC_Submitted.mark('nom', sess.name);
+  document.getElementById('form-screen').style.display = 'none';
+  document.getElementById('success-screen').style.display = 'block';
+  document.getElementById('s-nominee').textContent = nominee;
+  setTimeout(() => { window.location.href = 'menu.html?sub=nom'; }, 2200);
+}
+</script>
+</body>
+</html>

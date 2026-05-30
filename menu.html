@@ -1,0 +1,316 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Mondou Champions — Inicio</title>
+<link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:wght@400;600&family=DM+Sans:wght@300;400;500;600&display=swap" rel="stylesheet">
+<script src="mc_core.js"></script>
+<style>
+:root{
+  --gold:#C9963B;--gold-pale:#FEF9EC;
+  --black:#0D0D0D;--gray2:#555;--gray3:#888;
+  --off:#F5F4F0;--white:#fff;
+  --green:#1D9E75;--green-l:#E1F5EE;
+  --red:#E24B4A;--amber:#D97706;--amber-l:#FEF3C7;
+}
+*{box-sizing:border-box;margin:0;padding:0}
+body{font-family:'DM Sans',sans-serif;background:var(--off);min-height:100vh;padding-bottom:2.5rem}
+
+/* ── TOP BAR ── */
+.topbar{
+  background:var(--black);padding:.875rem 1.25rem;
+  display:flex;align-items:center;gap:10px;
+  position:relative;
+}
+.topbar::after{
+  content:'';position:absolute;top:0;left:0;right:0;height:3px;
+  background:linear-gradient(90deg,#8B5E1A,#C9963B,#E8C97E,#C9963B,#8B5E1A);
+}
+.av{
+  width:38px;height:38px;border-radius:50%;
+  display:flex;align-items:center;justify-content:center;
+  font-family:'Cormorant Garamond',serif;font-size:1.1rem;font-weight:600;color:#fff;
+  flex-shrink:0;
+}
+.t-info{flex:1}
+.t-name{font-size:14px;font-weight:600;color:var(--white)}
+.t-meta{font-size:10.5px;color:var(--gray3);margin-top:1px}
+.logout{
+  font-size:11px;color:var(--gray3);cursor:pointer;
+  padding:5px 10px;border-radius:6px;border:.5px solid #333;
+  background:transparent;font-family:'DM Sans',sans-serif;
+  white-space:nowrap;
+}
+
+/* ── GREETING ── */
+.greet{padding:1.5rem 1.25rem .5rem}
+.greet-day{font-size:10px;font-weight:600;letter-spacing:.12em;color:var(--gray3);text-transform:uppercase;margin-bottom:.25rem}
+.greet-text{font-family:'Cormorant Garamond',serif;font-size:1.7rem;font-weight:600;color:var(--black)}
+
+/* ── INFO PILLS ── */
+.pills{display:flex;gap:6px;padding:.625rem 1.25rem;flex-wrap:wrap}
+.pill{
+  padding:4px 10px;border-radius:100px;
+  font-size:11px;font-weight:500;
+  background:var(--white);border:.5px solid #E0DDD6;color:var(--gray2);
+}
+
+/* ── STATUS CARD ── */
+.status{
+  margin:.25rem 1.25rem .875rem;
+  background:var(--white);border-radius:12px;
+  padding:.875rem 1rem;
+  box-shadow:0 1px 3px rgba(0,0,0,.07);
+  display:flex;align-items:center;gap:10px;
+}
+.s-icon{font-size:1.5rem;flex-shrink:0}
+.s-info .st{font-size:12px;font-weight:600;color:var(--black)}
+.s-info .sn{font-size:11px;color:var(--gray2);margin-top:1px;line-height:1.45}
+.s-badge{
+  margin-left:auto;flex-shrink:0;padding:3px 10px;
+  border-radius:100px;font-size:10px;font-weight:700;
+}
+
+/* ── SECTION LABEL ── */
+.sec{
+  font-size:10px;font-weight:700;color:var(--gray2);
+  text-transform:uppercase;letter-spacing:.1em;
+  margin:.875rem 1.25rem .5rem;
+  display:flex;align-items:center;gap:6px;
+}
+.sec::after{content:'';flex:1;height:.5px;background:#E0DDD6}
+
+/* ── CARDS ── */
+.cards{padding:0 1.25rem;display:flex;flex-direction:column;gap:10px}
+
+.card{
+  border-radius:14px;overflow:hidden;
+  text-decoration:none;display:block;
+  transition:transform .16s;
+  -webkit-tap-highlight-color:transparent;
+}
+.card:active{transform:scale(.98)}
+.card.disabled{opacity:.45;pointer-events:none}
+
+.c-in{padding:1.1rem 1.25rem .9rem;position:relative}
+.c-eye{font-size:9px;font-weight:700;letter-spacing:.14em;text-transform:uppercase;margin-bottom:.2rem;opacity:.75}
+.c-title{
+  font-family:'Cormorant Garamond',serif;
+  font-size:1.3rem;font-weight:600;line-height:1.2;margin-bottom:.2rem;
+}
+.c-desc{font-size:11.5px;line-height:1.5;opacity:.8;margin-bottom:.5rem}
+.c-time{font-size:10px;opacity:.6;display:flex;align-items:center;gap:4px}
+.c-arrow{position:absolute;right:1.25rem;top:50%;transform:translateY(-50%);font-size:1.2rem;opacity:.45}
+.c-done{
+  position:absolute;right:1rem;top:50%;transform:translateY(-50%);
+  background:rgba(255,255,255,.2);border-radius:100px;
+  padding:3px 10px;font-size:10px;font-weight:700;color:#fff;
+}
+
+/* Card colors */
+.c-purple {background:linear-gradient(135deg,#3B0764,#7C3AED);color:#fff}
+.c-gold   {background:linear-gradient(135deg,#713F12,#C9963B);color:#fff}
+.c-orange {background:linear-gradient(135deg,#78350F,#D97706);color:#fff}
+.c-dark   {background:linear-gradient(135deg,#111,#2C2C2C);color:#fff;border:.5px solid #333}
+.c-green  {background:linear-gradient(135deg,#064E3B,#1D9E75);color:#fff}
+.c-admin  {background:linear-gradient(135deg,#1A1A1A,#3D3D3D);color:#fff;border:.5px solid #444}
+.c-trophy {background:linear-gradient(135deg,#3D1F00,#C9963B);color:#fff}
+
+/* New reward badge */
+.reward-dot{
+  position:absolute;top:.75rem;right:3rem;
+  width:9px;height:9px;border-radius:50%;
+  background:#E24B4A;border:1.5px solid rgba(255,255,255,.3);
+}
+
+.anim{animation:up .4s ease both}
+@keyframes up{from{opacity:0;transform:translateY(14px)}to{opacity:1;transform:translateY(0)}}
+</style>
+</head>
+<body>
+<div class="topbar">
+  <div class="av" id="av">?</div>
+  <div class="t-info">
+    <div class="t-name" id="t-name">—</div>
+    <div class="t-meta" id="t-meta">—</div>
+  </div>
+  <button class="logout" onclick="logout()">Salir →</button>
+</div>
+
+<div class="greet anim" style="animation-delay:.04s">
+  <div class="greet-day" id="greet-day">—</div>
+  <div class="greet-text" id="greet-text">—</div>
+</div>
+
+<div class="pills anim" style="animation-delay:.07s">
+  <span class="pill" id="pill-week">—</span>
+  <span class="pill" id="pill-salon">—</span>
+</div>
+
+<div class="status anim" style="animation-delay:.09s" id="status-card">
+  <div class="s-icon" id="s-icon">📋</div>
+  <div class="s-info">
+    <div class="st" id="s-title">Cargando...</div>
+    <div class="sn" id="s-sub">—</div>
+  </div>
+  <div class="s-badge" id="s-badge"></div>
+</div>
+
+<div class="sec anim" style="animation-delay:.11s">Tus accesos</div>
+<div class="cards anim" id="cards" style="animation-delay:.13s"></div>
+
+<script>
+let sess = null;
+(async () => {
+// ── 1. Cargar usuarios + verificar sesión ─────────────────────
+await MC_Users.init();
+sess = MC_Session.require();
+if (!sess) return;
+
+// ── 2. Marcar envíos que vienen de un form ────────────────────
+const submitted = new URLSearchParams(window.location.search).get('sub');
+if (submitted) {
+  MC_Submitted.mark(submitted, sess.name);
+  window.history.replaceState({}, '', 'menu.html');
+}
+
+// ── 3. Render barra superior ──────────────────────────────────
+const av = document.getElementById('av');
+av.textContent    = sess.name[0];
+av.style.background = sess.color;
+document.getElementById('t-name').textContent = sess.name;
+document.getElementById('t-meta').textContent =
+  `${MC_UI.salonIcon(sess.salon)} ${sess.salon} · Rol ${sess.rol}`;
+
+document.getElementById('greet-day').textContent  = MC_UI.todayString();
+document.getElementById('greet-text').textContent =
+  `${MC_UI.greeting()}, ${sess.name} 💛`;
+
+document.getElementById('pill-week').textContent  = `📅 ${MC_UI.weekRange()}`;
+document.getElementById('pill-salon').textContent =
+  `${MC_UI.salonIcon(sess.salon)} ${sess.salon}`;
+
+// ── 4. Estado de formularios ──────────────────────────────────
+const formKey = sess.rol === 'B' ? 'pb' : 'pa';
+const doneForm = MC_Submitted.check(formKey, sess.name);
+const doneNom  = MC_Submitted.check('nom', sess.name);
+const doneAll  = doneForm && doneNom;
+
+const si  = document.getElementById('s-icon');
+const st  = document.getElementById('s-title');
+const sn  = document.getElementById('s-sub');
+const sb  = document.getElementById('s-badge');
+
+if (doneAll) {
+  si.textContent = '✅';
+  st.textContent = '¡Todo listo esta semana!';
+  sn.textContent = 'Tus respuestas están registradas. Nos vemos en el próximo aviso.';
+  sb.textContent = 'Completo';
+  sb.style.cssText = 'background:#E1F5EE;color:#085041;margin-left:auto;flex-shrink:0;padding:3px 10px;border-radius:100px;font-size:10px;font-weight:700';
+} else {
+  si.textContent = '📋';
+  st.textContent = '¡Pendiente! Registra tu semana';
+  sn.textContent = 'Llena tu autoevaluación y nomina a una compañera. Menos de 3 minutos.';
+  sb.textContent = 'Pendiente';
+  sb.style.cssText = 'background:#FEF3C7;color:#78350F;margin-left:auto;flex-shrink:0;padding:3px 10px;border-radius:100px;font-size:10px;font-weight:700';
+}
+
+// ── 5. Tarjetas según rol ─────────────────────────────────────
+// Tarjeta de premios — igual para todos los roles
+const PREMIOS_CARD = {
+  href:'premios.html', cls:'c-trophy',
+  eye:'Mondou Champions · Premios', title:'🏆 Premios de la Quincena',
+  desc:'Ve qué puedes ganar, el avance del reto colectivo y tus reconocimientos.',
+  time:'Siempre visible', key:null, always:true
+};
+
+const CARDS = {
+  A: [
+    PREMIOS_CARD,
+    {
+      href:'form_pista_a.html', cls:'c-purple',
+      eye:'Pista A · Autoevaluación', title:'Mi Semana ✂️',
+      desc:'Puntualidad, trato con clientas y membresías ofrecidas.',
+      time:'~2 min', key:'pa'
+    },
+    {
+      href:'form_nominacion.html', cls:'c-gold',
+      eye:'Todo el equipo · Reconocimiento', title:'Nomino a una Compañera 💛',
+      desc:'Reconoce algo positivo que hizo alguien esta semana.',
+      time:'~1 min', key:'nom'
+    }
+  ],
+  B: [
+    PREMIOS_CARD,
+    {
+      href:'form_pista_b.html', cls:'c-orange',
+      eye:'Pista B · Operación', title:'Mi Semana ⚙️',
+      desc:'Apertura, protocolo de bienvenida, citas y membresías cerradas.',
+      time:'~3 min', key:'pb'
+    },
+    {
+      href:'form_nominacion.html', cls:'c-gold',
+      eye:'Todo el equipo · Reconocimiento', title:'Nomino a una Compañera 💛',
+      desc:'Reconoce algo positivo que hizo alguien esta semana.',
+      time:'~1 min', key:'nom'
+    }
+  ],
+  ADMIN: [
+    PREMIOS_CARD,
+    {
+      href:'config.html', cls:'c-green',
+      eye:'Configuración · Solo tú', title:'Gestión del Equipo ⚙️',
+      desc:'Agregar personas, definir premios y asignar recompensas.',
+      time:'Cuando necesites', key:null, always:true
+    },
+    {
+      href:'panel.html', cls:'c-dark',
+      eye:'Resultados · Todas las sucursales', title:'Centro de Mando 🎯',
+      desc:'Ver resultados, calcular puntuaciones y publicar en WhatsApp.',
+      time:'Quincenalmente', key:null, always:true
+    },
+    {
+      href:'form_pista_a.html', cls:'c-admin',
+      eye:'Ver como estilista', title:'Form Pista A ✂️',
+      desc:'Vista del formulario de autoevaluación de estilistas.',
+      time:'—', key:null, always:true
+    },
+    {
+      href:'form_pista_b.html', cls:'c-admin',
+      eye:'Ver como operación', title:'Form Pista B ⚙️',
+      desc:'Vista del formulario de autoevaluación de operación.',
+      time:'—', key:null, always:true
+    }
+  ]
+};
+
+const myCards = CARDS[sess.rol] || CARDS.A;
+document.getElementById('cards').innerHTML = myCards.map((c, i) => {
+  const done    = c.key ? MC_Submitted.check(c.key, sess.name) : false;
+  const disable = done && !c.always;
+  return `<a class="card ${c.cls}${disable ? ' disabled' : ''} anim"
+    href="${c.href}"
+    style="animation-delay:${.15 + i * .06}s">
+    <div class="c-in">
+      <div class="c-eye">${c.eye}</div>
+      <div class="c-title">${c.title}</div>
+      <div class="c-desc">${c.desc}</div>
+      <div class="c-time">⏱ ${c.time}</div>
+      ${done && !c.always
+        ? '<div class="c-done">✓ Enviado</div>'
+        : '<div class="c-arrow">→</div>'}
+    </div>
+  </a>`;
+}).join('');
+
+})(); // fin async IIFE
+
+// ── Logout — debe estar fuera del IIFE para que onclick lo encuentre ──
+function logout() {
+  MC_Session.clear();
+  window.location.href = 'login.html';
+}
+</script>
+</body>
+</html>

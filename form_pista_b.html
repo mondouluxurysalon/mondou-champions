@@ -1,0 +1,338 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Operación Semanal — Mondou Champions</title>
+<link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:wght@400;600&family=DM+Sans:wght@300;400;500;600&display=swap" rel="stylesheet">
+<script src="https://www.gstatic.com/firebasejs/10.14.1/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.14.1/firebase-firestore-compat.js"></script>
+<script src="mc_firebase.js"></script>
+<script src="mc_core.js"></script>
+<style>
+:root{
+  --gold:#C9963B;--gold-pale:#FEF9EC;
+  --black:#0D0D0D;--gray2:#555;--gray3:#888;
+  --off:#F5F4F0;--white:#fff;
+  --orange:#D97706;--orange-l:#FEF3C7;
+  --green:#1D9E75;
+  --blue:#2563EB;--blue-l:#EFF6FF;
+}
+*{box-sizing:border-box;margin:0;padding:0}
+body{font-family:'DM Sans',sans-serif;background:var(--off);min-height:100vh;padding-bottom:5rem}
+.hdr{background:linear-gradient(135deg,#78350F,var(--orange));padding:1.75rem 1.25rem 1.5rem;position:relative}
+.hdr::after{content:'';position:absolute;top:0;left:0;right:0;height:3px;background:linear-gradient(90deg,#FCD34D,#fff,#FCD34D)}
+.back{display:inline-flex;align-items:center;gap:5px;color:rgba(255,255,255,.55);font-size:11px;text-decoration:none;font-weight:500;margin-bottom:.75rem}
+.h-eye{font-size:9px;font-weight:600;letter-spacing:.16em;color:rgba(255,255,255,.6);text-transform:uppercase;margin-bottom:.375rem}
+.h-title{font-family:'Cormorant Garamond',serif;font-size:2rem;font-weight:600;color:#fff;line-height:1.1;margin-bottom:.375rem}
+.h-sub{font-size:11.5px;color:rgba(255,255,255,.65)}
+.user-chip{display:inline-flex;align-items:center;gap:7px;background:rgba(255,255,255,.12);border-radius:100px;padding:5px 12px;margin-top:.875rem}
+.uc-dot{width:22px;height:22px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-family:'Cormorant Garamond',serif;font-size:.85rem;font-weight:700;color:#fff}
+.uc-name{font-size:12px;font-weight:600;color:#fff}
+.uc-sub{font-size:10px;color:rgba(255,255,255,.6)}
+.body{padding:1.25rem 1.25rem 0}
+.sec-hdr{display:flex;align-items:flex-start;gap:10px;margin-bottom:.875rem}
+.sec-num{width:24px;height:24px;border-radius:50%;background:var(--orange);color:#fff;font-size:11px;font-weight:700;display:flex;align-items:center;justify-content:center;flex-shrink:0}
+.sec-ttl{font-size:14px;font-weight:600;color:var(--black);line-height:1.3}
+.sec-sub{font-size:11px;color:var(--gray3);margin-top:2px}
+.card{background:var(--white);border-radius:14px;padding:1.25rem;box-shadow:0 1px 4px rgba(0,0,0,.06);margin-bottom:.875rem}
+.div{height:.5px;background:linear-gradient(90deg,transparent,#E0DDD6,transparent);margin:1.25rem 0}
+.opts{display:flex;flex-direction:column;gap:7px}
+.opt{display:flex;align-items:center;gap:10px;padding:.75rem 1rem;border:1.5px solid #E8E6E0;border-radius:10px;cursor:pointer;transition:all .16s;background:var(--off);-webkit-tap-highlight-color:transparent}
+.opt.sel{border-color:var(--orange);background:var(--orange-l)}
+.opt-dot{width:18px;height:18px;border-radius:50%;border:2px solid #CCC;flex-shrink:0;display:flex;align-items:center;justify-content:center;transition:all .16s}
+.opt.sel .opt-dot{border-color:var(--orange);background:var(--orange)}
+.opt.sel .opt-dot::after{content:'';width:6px;height:6px;border-radius:50%;background:#fff}
+.opt-txt{font-size:12.5px;color:#333;flex:1;line-height:1.4}
+.opt-pts{font-size:10px;font-weight:700;color:var(--orange);background:var(--orange-l);padding:2px 7px;border-radius:100px;flex-shrink:0}
+.scale{display:flex;gap:6px}
+.sc{flex:1;border:1.5px solid #E8E6E0;border-radius:10px;background:var(--off);cursor:pointer;padding:.625rem .25rem;text-align:center;transition:all .16s;-webkit-tap-highlight-color:transparent}
+.sc .n{font-size:18px;font-weight:700;color:var(--gray3);display:block;transition:color .16s}
+.sc .l{font-size:9px;color:var(--gray3);display:block;margin-top:2px;line-height:1.3}
+.sc.sel{border-color:var(--orange);background:var(--orange-l)}
+.sc.sel .n,.sc.sel .l{color:var(--orange)}
+/* MEMBERSHIP COUNTER */
+.memb-grid{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+.memb-item{background:var(--off);border:.5px solid #E8E6E0;border-radius:10px;padding:.75rem;display:flex;align-items:center;gap:8px}
+.memb-item.full{grid-column:span 2}
+.m-info{flex:1}
+.m-label{font-size:12px;font-weight:500;color:var(--black)}
+.m-price{font-size:10px;padding:1px 6px;border-radius:100px;font-weight:600;margin-top:2px;display:inline-block}
+.m-ctrl{display:flex;align-items:center;gap:6px;flex-shrink:0}
+.m-btn{width:28px;height:28px;border-radius:8px;border:1px solid #E8E6E0;background:var(--white);font-size:16px;font-weight:600;cursor:pointer;display:flex;align-items:center;justify-content:center;color:var(--gray3);transition:all .15s;-webkit-tap-highlight-color:transparent}
+.m-btn:active{transform:scale(.88)}
+.m-btn.plus{border-color:var(--orange);color:var(--orange)}
+.m-val{font-size:16px;font-weight:700;color:var(--black);width:22px;text-align:center}
+textarea{width:100%;border:1.5px solid #E8E6E0;border-radius:10px;padding:.875rem 1rem;font-size:13px;font-family:'DM Sans',sans-serif;color:#333;resize:none;background:var(--off);outline:none;transition:border-color .18s;min-height:75px}
+textarea:focus{border-color:var(--orange);background:var(--white)}
+textarea::placeholder{color:var(--gray3)}
+/* PROGRESS */
+.progress{background:var(--black);border-radius:14px;padding:1.25rem;margin-bottom:.875rem;display:flex;align-items:center;gap:1rem}
+.prog-circle{width:62px;height:62px;border-radius:50%;border:2.5px solid var(--orange);flex-shrink:0;display:flex;flex-direction:column;align-items:center;justify-content:center}
+.prog-n{font-size:22px;font-weight:700;color:var(--orange);line-height:1}
+.prog-max{font-size:9px;color:var(--gray3);margin-top:1px}
+.prog-info .pt{font-size:12px;font-weight:600;color:#fff;margin-bottom:3px}
+.prog-info .ps{font-size:11px;color:var(--gray3);line-height:1.5}
+.prog-bars{flex:1;display:flex;flex-direction:column;gap:4px;margin-top:.5rem}
+.pb-row{display:flex;align-items:center;gap:6px}
+.pb-lbl{font-size:10px;color:var(--gray3);width:85px;flex-shrink:0}
+.pb-track{flex:1;height:4px;background:#333;border-radius:2px;overflow:hidden}
+.pb-fill{height:100%;background:var(--orange);border-radius:2px;transition:width .3s}
+.pb-val{font-size:10px;color:var(--gray2);width:28px;text-align:right}
+.submit-wrap{padding:0 1.25rem}
+.submit-btn{width:100%;background:var(--orange);color:#fff;border:none;border-radius:12px;padding:1rem;font-size:14px;font-weight:700;font-family:'DM Sans',sans-serif;cursor:pointer;letter-spacing:.04em;transition:all .18s}
+.submit-btn:active{transform:scale(.98)}
+.submit-note{font-size:11px;color:var(--gray3);text-align:center;margin-top:.5rem}
+.success{display:none;padding:3.5rem 1.5rem;text-align:center}
+.s-icon{font-size:3.5rem;margin-bottom:1rem}
+.s-title{font-family:'Cormorant Garamond',serif;font-size:2rem;font-weight:600;color:var(--black);margin-bottom:.5rem}
+.s-msg{font-size:13px;color:var(--gray2);line-height:1.6;margin-bottom:1.5rem}
+.s-pts{display:inline-block;background:var(--black);color:var(--orange);border-radius:12px;padding:.875rem 2rem;font-size:1.4rem;font-weight:700}
+@keyframes up{from{opacity:0;transform:translateY(12px)}to{opacity:1;transform:translateY(0)}}
+.anim{animation:up .35s ease both}
+</style>
+</head>
+<body>
+<div id="form-screen">
+<div class="hdr">
+  <a class="back" href="menu.html">← Inicio</a>
+  <div class="h-eye">Pista B · Operación semanal</div>
+  <div class="h-title">Mi Semana ⚙️</div>
+  <div class="h-sub">Edna · Gaby · Llena esto antes de salir el sábado</div>
+  <div class="user-chip">
+    <div class="uc-dot" id="uc-dot">?</div>
+    <div>
+      <div class="uc-name" id="uc-name">—</div>
+      <div class="uc-sub" id="uc-salon">—</div>
+    </div>
+  </div>
+</div>
+<div class="body">
+
+<!-- Q1 APERTURA -->
+<div class="sec-hdr anim" style="animation-delay:.05s">
+  <div class="sec-num">1</div>
+  <div><div class="sec-ttl">¿Abrimos puntual todos los días?</div>
+  <div class="sec-sub">Vale hasta 75 pts en la quincena</div></div>
+</div>
+<div class="card anim" style="animation-delay:.07s">
+  <div class="opts" id="q1">
+    <div class="opt" onclick="pick('q1',1,this)"><div class="opt-dot"></div><div class="opt-txt">Más de un día abrimos tarde 😕</div><span class="opt-pts">1 pt</span></div>
+    <div class="opt" onclick="pick('q1',2,this)"><div class="opt-dot"></div><div class="opt-txt">Un día llegamos tarde</div><span class="opt-pts">3 pts</span></div>
+    <div class="opt" onclick="pick('q1',3,this)"><div class="opt-dot"></div><div class="opt-txt">Puntual todos los días ✓</div><span class="opt-pts">5 pts</span></div>
+  </div>
+</div>
+<div class="div"></div>
+
+<!-- Q2 PROTOCOLO -->
+<div class="sec-hdr anim" style="animation-delay:.09s">
+  <div class="sec-num">2</div>
+  <div><div class="sec-ttl">¿Las clientas recibieron protocolo completo?</div>
+  <div class="sec-sub">Bebida ofrecida, bienvenida cálida, sin esperas — vale 100 pts</div></div>
+</div>
+<div class="card anim" style="animation-delay:.11s">
+  <div class="scale" id="q2">
+    <div class="sc" onclick="pickSc('q2',1,this)"><span class="n">1</span><span class="l">No se logró</span></div>
+    <div class="sc" onclick="pickSc('q2',2,this)"><span class="n">2</span><span class="l">Parcial</span></div>
+    <div class="sc" onclick="pickSc('q2',3,this)"><span class="n">3</span><span class="l">Mayoría</span></div>
+    <div class="sc" onclick="pickSc('q2',4,this)"><span class="n">4</span><span class="l">Casi siempre</span></div>
+    <div class="sc" onclick="pickSc('q2',5,this)"><span class="n">5</span><span class="l">Siempre ✨</span></div>
+  </div>
+</div>
+<div class="div"></div>
+
+<!-- Q3 MEMBRESÍAS EN CAJA -->
+<div class="sec-hdr anim" style="animation-delay:.13s">
+  <div class="sec-num">3</div>
+  <div><div class="sec-ttl">¿Mencionaste la membresía en cada cobro?</div>
+  <div class="sec-sub">Tu principal herramienta de venta desde caja — vale 100 pts</div></div>
+</div>
+<div class="card anim" style="animation-delay:.15s">
+  <div class="opts" id="q3">
+    <div class="opt" onclick="pick('q3',1,this)"><div class="opt-dot"></div><div class="opt-txt">No lo hice esta semana</div><span class="opt-pts">1 pt</span></div>
+    <div class="opt" onclick="pick('q3',2,this)"><div class="opt-dot"></div><div class="opt-txt">Lo mencioné cuando me acordé</div><span class="opt-pts">2 pts</span></div>
+    <div class="opt" onclick="pick('q3',3,this)"><div class="opt-dot"></div><div class="opt-txt">Lo ofrecí a la mayoría</div><span class="opt-pts">4 pts</span></div>
+    <div class="opt" onclick="pick('q3',4,this)"><div class="opt-dot"></div><div class="opt-txt">Lo ofrecí a TODAS las clientas 💳</div><span class="opt-pts">5 pts</span></div>
+  </div>
+</div>
+<div class="div"></div>
+
+<!-- Q4 CONFIRMACIÓN -->
+<div class="sec-hdr anim" style="animation-delay:.17s">
+  <div class="sec-num">4</div>
+  <div><div class="sec-ttl">¿Confirmamos citas con 24h de anticipación?</div>
+  <div class="sec-sub">Reducir cancelaciones es clave — vale 100 pts</div></div>
+</div>
+<div class="card anim" style="animation-delay:.19s">
+  <div class="opts" id="q4">
+    <div class="opt" onclick="pick('q4',1,this)"><div class="opt-dot"></div><div class="opt-txt">Casi ninguna se confirmó</div><span class="opt-pts">1 pt</span></div>
+    <div class="opt" onclick="pick('q4',2,this)"><div class="opt-dot"></div><div class="opt-txt">Menos del 60% confirmadas</div><span class="opt-pts">2 pts</span></div>
+    <div class="opt" onclick="pick('q4',3,this)"><div class="opt-dot"></div><div class="opt-txt">60–79% confirmadas</div><span class="opt-pts">3 pts</span></div>
+    <div class="opt" onclick="pick('q4',4,this)"><div class="opt-dot"></div><div class="opt-txt">Más del 80% confirmadas ✓</div><span class="opt-pts">5 pts</span></div>
+  </div>
+</div>
+<div class="div"></div>
+
+<!-- Q5 MEMBRESÍAS CERRADAS -->
+<div class="sec-hdr anim" style="animation-delay:.21s">
+  <div class="sec-num">5</div>
+  <div><div class="sec-ttl">Membresías que cerraste esta semana</div>
+  <div class="sec-sub">Se verifican contra TBHS al cierre de quincena</div></div>
+</div>
+<div class="card anim" style="animation-delay:.23s">
+  <div class="memb-grid">
+    <div class="memb-item"><div class="m-info"><div class="m-label">Bronce</div><span class="m-price" style="background:#FEF3C7;color:#92400E">$5,000</span></div><div class="m-ctrl"><button class="m-btn" onclick="chg('bronce',-1)">−</button><span class="m-val" id="v-bronce">0</span><button class="m-btn plus" onclick="chg('bronce',1)">+</button></div></div>
+    <div class="memb-item"><div class="m-info"><div class="m-label">Silver</div><span class="m-price" style="background:#F3F4F6;color:#374151">$10,000</span></div><div class="m-ctrl"><button class="m-btn" onclick="chg('silver',-1)">−</button><span class="m-val" id="v-silver">0</span><button class="m-btn plus" onclick="chg('silver',1)">+</button></div></div>
+    <div class="memb-item"><div class="m-info"><div class="m-label">Gold</div><span class="m-price" style="background:var(--gold-pale);color:#92400E">$15,000</span></div><div class="m-ctrl"><button class="m-btn" onclick="chg('gold',-1)">−</button><span class="m-val" id="v-gold">0</span><button class="m-btn plus" onclick="chg('gold',1)">+</button></div></div>
+    <div class="memb-item"><div class="m-info"><div class="m-label">Black</div><span class="m-price" style="background:#F3F4F6;color:#111">$25,000</span></div><div class="m-ctrl"><button class="m-btn" onclick="chg('black',-1)">−</button><span class="m-val" id="v-black">0</span><button class="m-btn plus" onclick="chg('black',1)">+</button></div></div>
+    <div class="memb-item full"><div class="m-info"><div class="m-label">Adamantium 💎</div><span class="m-price" style="background:var(--blue-l);color:#1D4ED8">$50,000</span></div><div class="m-ctrl"><button class="m-btn" onclick="chg('adam',-1)">−</button><span class="m-val" id="v-adam">0</span><button class="m-btn plus" onclick="chg('adam',1)">+</button></div></div>
+  </div>
+</div>
+<div class="div"></div>
+
+<!-- Q6 SITUACIÓN -->
+<div class="sec-hdr anim" style="animation-delay:.25s">
+  <div class="sec-num">6</div>
+  <div><div class="sec-ttl">¿Hubo alguna situación difícil con una clienta? <span style="color:var(--gray3);font-weight:400">(opcional)</span></div>
+  <div class="sec-sub">Para aprender, no para castigar</div></div>
+</div>
+<div class="card anim" style="animation-delay:.27s">
+  <textarea id="q6" rows="3" placeholder="Ej: 'Una clienta esperó 25 min sin que nadie la atendiera' — ¿qué pasó y cómo se resolvió?"></textarea>
+</div>
+<div class="div"></div>
+
+<!-- Q7 MEJORA -->
+<div class="sec-hdr anim" style="animation-delay:.29s">
+  <div class="sec-num">7</div>
+  <div><div class="sec-ttl">¿Algo que mejorar la próxima semana? <span style="color:var(--gray3);font-weight:400">(opcional)</span></div>
+  <div class="sec-sub">Una idea, un proceso, lo que sea</div></div>
+</div>
+<div class="card anim" style="animation-delay:.31s">
+  <textarea id="q7" rows="3" placeholder="Ej: 'Necesitamos más stock de bebidas los sábados', 'Sería útil tener un guión para ofrecer membresías...'"></textarea>
+</div>
+<div class="div"></div>
+
+<!-- PROGRESS -->
+<div class="progress anim" style="animation-delay:.33s">
+  <div class="prog-circle">
+    <span class="prog-n" id="prog-n">—</span>
+    <span class="prog-max">/16 sem</span>
+  </div>
+  <div style="flex:1">
+    <div class="prog-info">
+      <div class="pt">Puntuación parcial operación</div>
+      <div class="ps">Se combina con membresías (TBHS) y nominaciones recibidas.</div>
+    </div>
+    <div class="prog-bars">
+      <div class="pb-row"><span class="pb-lbl">Apertura puntual</span><div class="pb-track"><div class="pb-fill" id="pb1" style="width:0%"></div></div><span class="pb-val" id="pv1">—</span></div>
+      <div class="pb-row"><span class="pb-lbl">Protocolo</span><div class="pb-track"><div class="pb-fill" id="pb2" style="width:0%"></div></div><span class="pb-val" id="pv2">—</span></div>
+      <div class="pb-row"><span class="pb-lbl">Membresía caja</span><div class="pb-track"><div class="pb-fill" id="pb3" style="width:0%"></div></div><span class="pb-val" id="pv3">—</span></div>
+      <div class="pb-row"><span class="pb-lbl">Confirmación</span><div class="pb-track"><div class="pb-fill" id="pb4" style="width:0%"></div></div><span class="pb-val" id="pv4">—</span></div>
+    </div>
+  </div>
+</div>
+
+</div><!-- /body -->
+
+<div class="submit-wrap anim" style="animation-delay:.35s">
+  <button class="submit-btn" onclick="submit()">Enviar operación de la semana →</button>
+  <div class="submit-note">No olvides llenar también la nominación de compañera 💛</div>
+</div>
+</div><!-- /form-screen -->
+
+<div class="success" id="success-screen">
+  <div class="s-icon">⚙️</div>
+  <div class="s-title anim">¡Semana registrada!</div>
+  <div class="s-msg anim" style="animation-delay:.1s">Tu evaluación de operación está guardada.<br>Ahora llena la nominación para completar tu semana.</div>
+  <div class="s-pts anim" style="animation-delay:.2s" id="s-pts">— pts operación</div>
+</div>
+
+<script>
+// ── Variables globales (accesibles desde onclick del HTML) ────
+let sess = null;
+const ans   = { q1:0, q2:0, q3:0, q4:0 };
+const membs = { bronce:0, silver:0, gold:0, black:0, adam:0 };
+
+// ── Init async — solo configura el chip de usuario ────────────
+(async () => {
+  await MC_Users.init();
+  sess = MC_Session.require();
+  if (!sess) return;
+
+  // Anti-reenvío: verificar en Firestore si ya registró esta semana
+  const yaEnvio = await MC_DB.hasRespB(sess.name);
+  if (yaEnvio) {
+    document.getElementById('form-screen').style.display = 'none';
+    const sc = document.getElementById('success-screen');
+    sc.style.display = 'block';
+    sc.querySelector('.s-title').textContent = '¡Ya registraste esta semana!';
+    sc.querySelector('.s-msg').innerHTML = 'Tu evaluación de operación ya está guardada.<br>No puedes volver a enviarla en el mismo período.';
+    document.getElementById('s-pts').textContent = '';
+    return;
+  }
+
+  const dot = document.getElementById('uc-dot');
+  dot.textContent      = sess.name[0];
+  dot.style.background = sess.color;
+  document.getElementById('uc-name').textContent  = sess.name;
+  document.getElementById('uc-salon').textContent =
+    `${MC_UI.salonIcon(sess.salon)} ${sess.salon} · Pista B`;
+})();
+
+// ── Funciones globales (deben estar fuera del IIFE) ───────────
+function pick(qid, val, el) {
+  ans[qid] = val;
+  document.querySelectorAll(`#${qid} .opt`).forEach(e => e.classList.remove('sel'));
+  el.classList.add('sel');
+  updateProgress();
+}
+function pickSc(qid, val, el) {
+  ans[qid] = val;
+  document.querySelectorAll(`#${qid} .sc`).forEach(e => e.classList.remove('sel'));
+  el.classList.add('sel');
+  updateProgress();
+}
+function chg(key, delta) {
+  membs[key] = Math.max(0, membs[key] + delta);
+  document.getElementById('v-' + key).textContent = membs[key];
+}
+function updateProgress() {
+  const t = ans.q1 + ans.q2 + ans.q3 + ans.q4;
+  document.getElementById('prog-n').textContent = t || '—';
+  const pairs = [['pb1','pv1',ans.q1,3],['pb2','pv2',ans.q2,5],['pb3','pv3',ans.q3,4],['pb4','pv4',ans.q4,4]];
+  pairs.forEach(([bid,vid,v,max]) => {
+    document.getElementById(bid).style.width = (v/max*100) + '%';
+    document.getElementById(vid).textContent = v ? `${v}/${max}` : '—';
+  });
+}
+async function submit() {
+  if (!ans.q1 || !ans.q2 || !ans.q3 || !ans.q4) {
+    alert('Por favor responde las 4 preguntas antes de enviar.');
+    return;
+  }
+  const btn = document.querySelector('.submit-btn');
+  btn.disabled = true; btn.textContent = 'Guardando...';
+  const total = ans.q1 + ans.q2 + ans.q3 + ans.q4;
+  const data  = {
+    name: sess.name, salon: sess.salon,
+    ...ans, membs,
+    q6: document.getElementById('q6').value,
+    q7: document.getElementById('q7').value,
+    total, ts: new Date().toISOString()
+  };
+  try {
+    await MC_DB.saveRespB(data);
+  } catch(e) {
+    btn.disabled = false; btn.textContent = 'Enviar operación de la semana →';
+    alert('Error al guardar. Verifica tu conexión e intenta de nuevo.');
+    return;
+  }
+  MC_Submitted.mark('pb', sess.name);
+  document.getElementById('form-screen').style.display = 'none';
+  document.getElementById('success-screen').style.display = 'block';
+  document.getElementById('s-pts').textContent = `${total} pts operación ✨`;
+  setTimeout(() => { window.location.href = 'menu.html?sub=pb'; }, 2200);
+}
+</script>
+</body>
+</html>

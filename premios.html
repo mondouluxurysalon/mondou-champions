@@ -1,0 +1,335 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Premios — Mondou Champions</title>
+<link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:wght@400;600;700&family=DM+Sans:wght@300;400;500;600&display=swap" rel="stylesheet">
+<script src="https://www.gstatic.com/firebasejs/10.14.1/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.14.1/firebase-firestore-compat.js"></script>
+<script src="mc_firebase.js"></script>
+<script src="mc_core.js"></script>
+<style>
+:root{
+  --gold:#C9963B;--gold-pale:#FEF9EC;--gold-mid:#E8C97E;
+  --black:#0D0D0D;--dark:#111;--gray2:#555;--gray3:#888;
+  --off:#F5F4F0;--white:#fff;
+  --green:#1D9E75;--green-l:#E1F5EE;
+  --red:#E24B4A;--amber:#D97706;--amber-l:#FEF3C7;
+  --purple:#7C3AED;
+}
+*{box-sizing:border-box;margin:0;padding:0}
+body{font-family:'DM Sans',sans-serif;background:var(--dark);min-height:100vh;padding-bottom:4rem}
+
+/* HEADER */
+.hdr{
+  background:linear-gradient(160deg,#1A0A00,#3D1F00,#1A0A00);
+  padding:2rem 1.25rem 1.75rem;position:relative;overflow:hidden;
+}
+.hdr::before{
+  content:'';position:absolute;inset:0;
+  background:radial-gradient(ellipse at 50% 0%,rgba(201,150,59,.25) 0%,transparent 70%);
+}
+.hdr::after{
+  content:'';position:absolute;top:0;left:0;right:0;height:3px;
+  background:linear-gradient(90deg,#8B5E1A,#C9963B,#E8C97E,#C9963B,#8B5E1A);
+}
+.back{display:inline-flex;align-items:center;gap:5px;color:rgba(255,255,255,.4);font-size:11px;text-decoration:none;font-weight:500;margin-bottom:1.25rem;position:relative}
+.h-trophy{font-size:3rem;margin-bottom:.5rem;display:block;position:relative;filter:drop-shadow(0 0 20px rgba(201,150,59,.5))}
+.h-eye{font-size:9px;font-weight:700;letter-spacing:.18em;color:var(--gold);text-transform:uppercase;margin-bottom:.375rem;position:relative}
+.h-title{font-family:'Cormorant Garamond',serif;font-size:2.2rem;font-weight:700;color:#fff;line-height:1.1;position:relative}
+.h-sub{font-size:12px;color:rgba(255,255,255,.5);margin-top:.375rem;position:relative}
+
+/* BODY */
+.body{padding:1.25rem 1.25rem 0}
+
+/* SECTION LABEL */
+.sec{font-size:9.5px;font-weight:700;color:var(--gray3);text-transform:uppercase;letter-spacing:.12em;margin:.875rem 0 .625rem;display:flex;align-items:center;gap:6px}
+.sec::after{content:'';flex:1;height:.5px;background:#2C2C2C}
+
+/* MY REWARD — banner especial */
+.my-reward{
+  background:linear-gradient(135deg,#1A1200,#3D2D00);
+  border:1.5px solid var(--gold);border-radius:16px;
+  padding:1.25rem;margin-bottom:1rem;
+  position:relative;overflow:hidden;
+}
+.my-reward::before{
+  content:'';position:absolute;top:-30px;right:-30px;
+  width:120px;height:120px;border-radius:50%;
+  background:radial-gradient(circle,rgba(201,150,59,.2) 0%,transparent 70%);
+}
+.mr-label{font-size:9px;font-weight:700;letter-spacing:.16em;color:var(--gold);text-transform:uppercase;margin-bottom:.5rem}
+.mr-emoji{font-size:2.5rem;margin-bottom:.375rem;display:block}
+.mr-text{font-family:'Cormorant Garamond',serif;font-size:1.35rem;font-weight:600;color:#fff;line-height:1.3}
+.mr-week{font-size:10.5px;color:rgba(255,255,255,.4);margin-top:.375rem}
+.mr-new{
+  display:inline-flex;align-items:center;gap:4px;
+  background:var(--gold);color:var(--black);
+  border-radius:100px;padding:3px 10px;
+  font-size:10px;font-weight:700;margin-top:.625rem;
+}
+
+/* PRIZE CARD */
+.prize-card{
+  background:#1A1A1A;border-radius:14px;
+  padding:1rem 1.25rem;margin-bottom:.75rem;
+  border:.5px solid #2C2C2C;
+}
+.pc-header{display:flex;align-items:center;gap:8px;margin-bottom:.75rem;padding-bottom:.625rem;border-bottom:.5px solid #2C2C2C}
+.pc-icon{font-size:1.3rem}
+.pc-title{font-size:10px;font-weight:700;color:var(--gold);text-transform:uppercase;letter-spacing:.1em}
+
+.prize-row{display:flex;align-items:flex-start;gap:10px;padding:.5rem 0;border-bottom:.5px solid #222}
+.prize-row:last-child{border:none;padding-bottom:0}
+.prize-medal{font-size:1.4rem;flex-shrink:0;width:32px;text-align:center;margin-top:1px}
+.prize-desc{flex:1}
+.prize-pos{font-size:10px;font-weight:600;color:var(--gray3);text-transform:uppercase;letter-spacing:.06em;margin-bottom:2px}
+.prize-text{font-size:13px;font-weight:500;color:#fff;line-height:1.4}
+.prize-empty{font-size:12px;color:var(--gray3);font-style:italic;text-align:center;padding:.5rem 0}
+
+/* COLLECTIVE THERMOMETER */
+.thermo{
+  background:#1A1A1A;border-radius:14px;
+  padding:1.25rem;margin-bottom:.75rem;
+  border:.5px solid #2C2C2C;
+}
+.th-header{display:flex;align-items:center;justify-content:space-between;margin-bottom:.875rem}
+.th-title{font-size:10px;font-weight:700;color:var(--gold);text-transform:uppercase;letter-spacing:.1em}
+.th-status{font-size:10px;font-weight:700;padding:2px 9px;border-radius:100px}
+.th-status.ok{background:var(--green-l);color:var(--green)}
+.th-status.pending{background:#2C2C2C;color:var(--gray3)}
+.th-goal{font-family:'Cormorant Garamond',serif;font-size:1.1rem;font-weight:600;color:#fff;margin-bottom:.875rem;line-height:1.4}
+.th-track{height:12px;background:#2C2C2C;border-radius:100px;overflow:hidden;margin-bottom:.5rem}
+.th-fill{height:100%;border-radius:100px;background:linear-gradient(90deg,#8B5E1A,#C9963B,#E8C97E);transition:width 1s ease}
+.th-nums{display:flex;justify-content:space-between;font-size:10.5px}
+.th-current{font-weight:700;color:var(--gold)}
+.th-target{color:var(--gray3)}
+.th-prize{
+  margin-top:.875rem;padding-top:.75rem;border-top:.5px solid #2C2C2C;
+  display:flex;align-items:center;gap:8px;
+}
+.th-prize-icon{font-size:1.2rem;flex-shrink:0}
+.th-prize-text{font-size:12px;color:rgba(255,255,255,.7);line-height:1.4}
+
+/* NO PRIZES PLACEHOLDER */
+.placeholder{
+  text-align:center;padding:2.5rem 1.25rem;
+  color:var(--gray3);
+}
+.placeholder .big{font-size:2.5rem;margin-bottom:.75rem;display:block;opacity:.4}
+.placeholder p{font-size:12px;line-height:1.6}
+
+/* LOADING */
+.loading{text-align:center;padding:1.5rem;color:var(--gray3);font-size:12px}
+
+@keyframes up{from{opacity:0;transform:translateY(14px)}to{opacity:1;transform:translateY(0)}}
+.anim{animation:up .4s ease both}
+@keyframes pulse{0%,100%{opacity:1}50%{opacity:.6}}
+.pulse{animation:pulse 2s ease infinite}
+</style>
+</head>
+<body>
+
+<div class="hdr">
+  <a class="back" href="menu.html">← Inicio</a>
+  <span class="h-trophy">🏆</span>
+  <div class="h-eye">Mondou Champions · Esta quincena</div>
+  <div class="h-title">Premios &amp;<br>Reconocimientos</div>
+  <div class="h-sub" id="h-week">Cargando período...</div>
+</div>
+
+<div class="body">
+  <div class="loading anim" id="main-loading">Cargando premios...</div>
+  <div id="main-content" style="display:none"></div>
+</div>
+
+<script>
+let sess = null;
+(async () => {
+  await MC_Users.init();
+  sess = MC_Session.require();
+  if (!sess) return;
+
+  document.getElementById('h-week').textContent = MC_UI.weekRange();
+
+const MEDALS_A = ['🥇','🥈','🥉'];
+const MEDALS_B = ['🥇','🥈'];
+
+function fmtPesos(n) {
+  return n ? '$' + Math.round(n).toLocaleString('es-MX') : '—';
+}
+
+function pct(val, max) {
+  return max > 0 ? Math.min(Math.round(val / max * 100), 100) : 0;
+}
+
+async function init() {
+  try {
+    const [prizes, sales, myReward] = await Promise.all([
+      MC_DB.getPrizes(),
+      MC_DB.getSales(),
+      MC_DB.getMyReward(sess.name)
+    ]);
+
+    // Mark as seen if it was new
+    if (myReward && !myReward.visto) {
+      MC_DB.markRewardSeen(sess.name).catch(()=>{});
+    }
+
+    document.getElementById('main-loading').style.display = 'none';
+    const wrap = document.getElementById('main-content');
+    wrap.style.display = 'block';
+    wrap.innerHTML = buildContent(prizes, sales, myReward);
+
+    // Animate thermometer bar after render
+    const fillTarget = prizes?.targetMemb || sales?.targetMemb || 30000;
+    const fill = document.getElementById('th-fill');
+    if (fill) {
+      const p = pct(sales?.membTotal || 0, fillTarget);
+      setTimeout(() => { fill.style.width = p + '%'; }, 120);
+    }
+
+  } catch(e) {
+    document.getElementById('main-loading').textContent = 'Error al cargar. Verifica tu conexión.';
+  }
+}
+
+function buildContent(prizes, sales, myReward) {
+  let html = '';
+
+  // ── Mi Premio ──────────────────────────────────────────────
+  if (myReward) {
+    const isNew = !myReward.visto;
+    html += `
+    <div class="sec anim">🎁 Mi premio</div>
+    <div class="my-reward anim" style="animation-delay:.04s">
+      <div class="mr-label">Reconocimiento de Mondou Champions</div>
+      <span class="mr-emoji">🎉</span>
+      <div class="mr-text">${esc(myReward.descripcion || '—')}</div>
+      <div class="mr-week">Quincena ${esc(myReward.week || '')}</div>
+      ${isNew ? '<div class="mr-new pulse">✨ Nuevo · Recién llegó</div>' : ''}
+    </div>`;
+  }
+
+  // ── Reto Colectivo ─────────────────────────────────────────
+  const membTotal  = sales?.membTotal  || 0;
+  const targetMemb = prizes?.targetMemb || sales?.targetMemb || 0;
+  const colPrize   = prizes?.colectivo;
+  const colActive  = colPrize?.activo !== false && targetMemb > 0;
+
+  if (colActive) {
+    const p     = pct(membTotal, targetMemb);
+    const logro = p >= 100;
+    html += `
+    <div class="sec anim" style="animation-delay:.05s">🎯 Reto colectivo</div>
+    <div class="thermo anim" style="animation-delay:.06s">
+      <div class="th-header">
+        <div class="th-title">Meta de membresías del salón</div>
+        <div class="th-status ${logro ? 'ok' : 'pending'}">${logro ? '✓ Logrado' : 'En curso'}</div>
+      </div>
+      <div class="th-goal">${colPrize?.descripcion || 'Si llegamos a la meta, todo el equipo gana.'}</div>
+      <div class="th-track">
+        <div class="th-fill" id="th-fill" style="width:0%"></div>
+      </div>
+      <div class="th-nums">
+        <span class="th-current">${membTotal.toLocaleString('es-MX')} vendidas</span>
+        <span class="th-target">Meta: ${targetMemb.toLocaleString('es-MX')}</span>
+      </div>
+      <div style="text-align:center;font-size:13px;font-weight:700;color:${logro?'var(--green)':'var(--gold)'};margin-top:.5rem">${p}% de la meta</div>
+    </div>`;
+  }
+
+  // ── Premios Pista A ────────────────────────────────────────
+  html += `<div class="sec anim" style="animation-delay:.07s">✂️ Pista A — Estilistas</div>`;
+  html += `<div class="prize-card anim" style="animation-delay:.08s">
+    <div class="pc-header">
+      <span class="pc-icon">✂️</span>
+      <span class="pc-title">Mejor estilista de la quincena · por sucursal</span>
+    </div>`;
+
+  if (prizes?.pistaA) {
+    const pa = prizes.pistaA;
+    [['p1','1er lugar',MEDALS_A[0]],['p2','2do lugar',MEDALS_A[1]],['p3','3er lugar',MEDALS_A[2]]].forEach(([key, pos, medal]) => {
+      if (pa[key]?.descripcion) {
+        html += `<div class="prize-row">
+          <div class="prize-medal">${medal}</div>
+          <div class="prize-desc">
+            <div class="prize-pos">${pos}</div>
+            <div class="prize-text">${esc(pa[key].descripcion)}</div>
+          </div>
+        </div>`;
+      }
+    });
+  } else {
+    html += `<div class="prize-empty">Próximamente — el equipo de dirección lo está definiendo 🔐</div>`;
+  }
+  html += `</div>`;
+
+  // ── Premios Pista B ────────────────────────────────────────
+  html += `<div class="sec anim" style="animation-delay:.09s">⚙️ Pista B — Operación</div>`;
+  html += `<div class="prize-card anim" style="animation-delay:.1s">
+    <div class="pc-header">
+      <span class="pc-icon">⚙️</span>
+      <span class="pc-title">Mejor en operación de la quincena</span>
+    </div>`;
+
+  if (prizes?.pistaB) {
+    const pb = prizes.pistaB;
+    [['p1','1er lugar',MEDALS_B[0]],['p2','2do lugar',MEDALS_B[1]]].forEach(([key, pos, medal]) => {
+      if (pb[key]?.descripcion) {
+        html += `<div class="prize-row">
+          <div class="prize-medal">${medal}</div>
+          <div class="prize-desc">
+            <div class="prize-pos">${pos}</div>
+            <div class="prize-text">${esc(pb[key].descripcion)}</div>
+          </div>
+        </div>`;
+      }
+    });
+  } else {
+    html += `<div class="prize-empty">Próximamente 🔐</div>`;
+  }
+  html += `</div>`;
+
+  // ── Más Nominada ───────────────────────────────────────────
+  html += `<div class="sec anim" style="animation-delay:.11s">💛 Más nominada</div>`;
+  html += `<div class="prize-card anim" style="animation-delay:.12s">
+    <div class="pc-header">
+      <span class="pc-icon">💛</span>
+      <span class="pc-title">Reconocimiento del equipo</span>
+    </div>
+    <div class="prize-row">
+      <div class="prize-medal">⭐</div>
+      <div class="prize-desc">
+        <div class="prize-pos">La compañera más nominada esta quincena</div>
+        <div class="prize-text">${prizes?.nominada?.descripcion ? esc(prizes.nominada.descripcion) : '<span style="color:var(--gray3);font-style:italic">Próximamente 🔐</span>'}</div>
+      </div>
+    </div>
+  </div>`;
+
+  // ── Mondou Awards (preview) ────────────────────────────────
+  html += `<div class="sec anim" style="animation-delay:.13s">👑 Mondou Awards · Fin de año</div>
+  <div class="prize-card anim" style="animation-delay:.14s" style="border-color:#3D2D00">
+    <div class="pc-header" style="border-color:#3D2D00">
+      <span class="pc-icon">👑</span>
+      <span class="pc-title" style="color:var(--gold-mid)">Gran celebración anual — todas las sucursales</span>
+    </div>
+    <div style="font-size:12px;color:rgba(255,255,255,.5);line-height:1.7;padding:.25rem 0">
+      MVP Mondou · Mejor Colorista · Mejor Peinadora · Mejor Maquillista · Novata del Año · Alma del Equipo<br>
+      <span style="color:var(--gold);font-size:11px;margin-top:.375rem;display:block">Se revela antes del evento de fin de año 🎄</span>
+    </div>
+  </div>`;
+
+  return html;
+}
+
+function esc(s) {
+  return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+}
+
+  init();
+})(); // fin async IIFE
+</script>
+</body>
+</html>

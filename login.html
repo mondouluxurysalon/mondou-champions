@@ -1,0 +1,327 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Mondou Champions — Acceso</title>
+<link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:wght@400;600&family=DM+Sans:wght@300;400;500;600&display=swap" rel="stylesheet">
+<script src="https://www.gstatic.com/firebasejs/10.14.1/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.14.1/firebase-firestore-compat.js"></script>
+<script src="mc_firebase.js"></script>
+<script src="mc_core.js"></script>
+<style>
+:root{
+  --gold:#C9963B; --gold-pale:#FEF9EC;
+  --black:#0D0D0D; --dark:#1A1A1A;
+  --gray2:#555; --gray3:#888;
+  --white:#fff;
+  --red:#E24B4A; --red-light:#FCEBEB;
+  --green:#1D9E75;
+}
+*{box-sizing:border-box;margin:0;padding:0}
+html,body{height:100%;overflow-x:hidden}
+body{
+  font-family:'DM Sans',sans-serif;
+  background:var(--black);
+  min-height:100vh;
+  display:flex;align-items:center;justify-content:center;
+  padding:1.25rem;
+}
+/* Gold top bar */
+body::after{
+  content:'';position:fixed;top:0;left:0;right:0;height:3px;
+  background:linear-gradient(90deg,#8B5E1A,#C9963B,#E8C97E,#C9963B,#8B5E1A);
+  z-index:10;
+}
+/* Watermark */
+body::before{
+  content:'MONDOU';
+  position:fixed;top:50%;left:50%;
+  transform:translate(-50%,-50%) rotate(-18deg);
+  font-family:'Cormorant Garamond',serif;
+  font-size:25vw;font-weight:600;color:rgba(201,150,59,.035);
+  white-space:nowrap;pointer-events:none;letter-spacing:.08em;
+}
+
+.box{width:100%;max-width:340px;position:relative;z-index:1}
+
+/* LOGO */
+.logo{text-align:center;margin-bottom:2.25rem}
+.logo-main{
+  font-family:'Cormorant Garamond',serif;
+  font-size:2.75rem;font-weight:600;
+  color:var(--white);letter-spacing:.08em;line-height:1;display:block;
+}
+.logo-main em{color:var(--gold);font-style:normal}
+.logo-sub{
+  display:block;font-size:9px;font-weight:600;
+  letter-spacing:.22em;color:var(--gray3);
+  text-transform:uppercase;margin-top:.5rem;
+}
+
+/* STEPS — solo uno visible a la vez */
+.step{display:none}
+.step.show{display:block;animation:up .3s ease both}
+@keyframes up{from{opacity:0;transform:translateY(12px)}to{opacity:1;transform:translateY(0)}}
+
+.step-label{
+  font-size:9px;font-weight:600;letter-spacing:.18em;
+  color:var(--gray3);text-transform:uppercase;
+  text-align:center;margin-bottom:1.25rem;
+}
+
+/* NAME GRID */
+.name-grid{
+  display:grid;grid-template-columns:1fr 1fr;gap:8px;
+  margin-bottom:.5rem;max-height:52vh;overflow-y:auto;
+}
+.name-btn{
+  border:1.5px solid #222;border-radius:12px;
+  background:#111;padding:.875rem .5rem;
+  text-align:center;cursor:pointer;transition:all .16s;
+  -webkit-tap-highlight-color:transparent;
+}
+.name-btn:active{transform:scale(.95)}
+.nb-av{
+  width:42px;height:42px;border-radius:50%;
+  display:flex;align-items:center;justify-content:center;
+  font-family:'Cormorant Garamond',serif;
+  font-size:1.2rem;font-weight:600;color:#fff;
+  margin:0 auto .5rem;
+}
+.nb-name{font-size:13px;font-weight:600;color:var(--white)}
+.nb-sub{font-size:10px;color:var(--gray3);margin-top:2px}
+
+/* SELECTED USER BAR */
+.sel-bar{
+  display:flex;align-items:center;gap:10px;
+  background:#111;border-radius:12px;
+  padding:.75rem 1rem;margin-bottom:1.5rem;
+  border:.5px solid #222;cursor:pointer;
+}
+.sel-av{
+  width:36px;height:36px;border-radius:50%;
+  display:flex;align-items:center;justify-content:center;
+  font-family:'Cormorant Garamond',serif;
+  font-size:1rem;font-weight:600;color:#fff;flex-shrink:0;
+}
+.sel-info{flex:1}
+.sel-name{font-size:14px;font-weight:600;color:var(--white)}
+.sel-sub{font-size:10.5px;color:var(--gray3);margin-top:1px}
+.sel-change{font-size:11px;color:var(--gold)}
+
+/* PIN DOTS */
+.pin-dots{
+  display:flex;gap:14px;justify-content:center;
+  margin-bottom:1.75rem;
+}
+.dot{
+  width:15px;height:15px;border-radius:50%;
+  border:2px solid #333;transition:all .18s;
+}
+.dot.on{background:var(--gold);border-color:var(--gold);transform:scale(1.15)}
+
+/* ERROR */
+.pin-error{
+  background:var(--red-light);color:var(--red);
+  border-radius:8px;padding:.5rem .875rem;
+  font-size:12px;font-weight:500;text-align:center;
+  margin-bottom:.875rem;display:none;
+}
+.pin-error.show{display:block;animation:shake .3s ease}
+@keyframes shake{25%{transform:translateX(-7px)}75%{transform:translateX(7px)}}
+
+/* PIN PAD */
+.pin-pad{
+  display:grid;grid-template-columns:repeat(3,1fr);gap:8px;
+}
+.p-btn{
+  border:none;border-radius:12px;background:#161616;
+  padding:.875rem;font-size:1.4rem;font-weight:500;
+  color:var(--white);font-family:'DM Sans',sans-serif;
+  cursor:pointer;transition:all .15s;border:.5px solid #222;
+  -webkit-tap-highlight-color:transparent;
+}
+.p-btn:active{background:#252525;transform:scale(.93)}
+.p-btn.zero{grid-column:2}
+.p-btn.del{
+  background:transparent;border-color:transparent;
+  color:var(--gray3);font-size:1.2rem;
+}
+.p-btn.del:active{color:var(--red)}
+
+/* SUCCESS OVERLAY */
+.success{
+  position:fixed;inset:0;background:var(--black);
+  display:flex;flex-direction:column;
+  align-items:center;justify-content:center;
+  z-index:50;opacity:0;pointer-events:none;transition:opacity .25s;
+}
+.success.show{opacity:1;pointer-events:all}
+.s-emoji{font-size:3.5rem;margin-bottom:1rem;animation:pop .4s .1s ease both}
+@keyframes pop{from{transform:scale(0)}to{transform:scale(1)}}
+.s-name{
+  font-family:'Cormorant Garamond',serif;
+  font-size:2rem;font-weight:600;color:var(--white);
+}
+.s-msg{font-size:12px;color:var(--gray3);margin-top:.375rem}
+</style>
+</head>
+<body>
+
+<div class="box">
+  <div class="logo">
+    <span class="logo-main">MONDOU <em>✦</em></span>
+    <span class="logo-sub">Champions · Acceso del equipo</span>
+  </div>
+
+  <!-- PASO 1: Elige tu nombre -->
+  <div class="step show" id="step1">
+    <div class="step-label">¿Quién eres?</div>
+    <div class="name-grid" id="name-grid"></div>
+  </div>
+
+  <!-- PASO 2: Ingresa tu PIN -->
+  <div class="step" id="step2">
+    <div class="sel-bar" id="sel-bar" onclick="backToStep1()">
+      <div class="sel-av" id="sel-av">?</div>
+      <div class="sel-info">
+        <div class="sel-name" id="sel-name">—</div>
+        <div class="sel-sub" id="sel-sub">—</div>
+      </div>
+      <div class="sel-change">✕ cambiar</div>
+    </div>
+    <div class="step-label">Tu PIN de 4 dígitos</div>
+    <div class="pin-dots">
+      <div class="dot" id="d0"></div>
+      <div class="dot" id="d1"></div>
+      <div class="dot" id="d2"></div>
+      <div class="dot" id="d3"></div>
+    </div>
+    <div class="pin-error" id="pin-error">PIN incorrecto · Intenta de nuevo</div>
+    <div class="pin-pad">
+      <button class="p-btn" onclick="tap('1')">1</button>
+      <button class="p-btn" onclick="tap('2')">2</button>
+      <button class="p-btn" onclick="tap('3')">3</button>
+      <button class="p-btn" onclick="tap('4')">4</button>
+      <button class="p-btn" onclick="tap('5')">5</button>
+      <button class="p-btn" onclick="tap('6')">6</button>
+      <button class="p-btn" onclick="tap('7')">7</button>
+      <button class="p-btn" onclick="tap('8')">8</button>
+      <button class="p-btn" onclick="tap('9')">9</button>
+      <button class="p-btn zero" onclick="tap('0')">0</button>
+      <button class="p-btn del" onclick="del()">⌫</button>
+    </div>
+  </div>
+</div>
+
+<!-- OVERLAY DE ÉXITO -->
+<div class="success" id="success">
+  <div class="s-emoji">💛</div>
+  <div class="s-name" id="s-name">Hola</div>
+  <div class="s-msg">Entrando a Mondou Champions...</div>
+</div>
+
+<script>
+// Si ya hay sesión activa, ir directo al menú (sync, sin esperar Firestore)
+if (MC_Session.get()) window.location.href = 'menu.html';
+
+// Mostrar estado de carga mientras se obtienen usuarios de Firestore
+document.getElementById('name-grid').innerHTML =
+  '<div style="grid-column:span 2;text-align:center;color:rgba(255,255,255,.3);padding:2rem;font-size:12px">Cargando equipo...</div>';
+
+// ── Cargar usuarios de Firestore, luego renderizar ────────────
+(async () => {
+  await MC_Users.init();
+  document.getElementById('name-grid').innerHTML =
+    Object.entries(MC_USERS)
+      .map(([name, u]) =>
+        `<button class="name-btn" onclick="selectName('${name}')">
+          <div class="nb-av" style="background:${u.color}">${name[0]}</div>
+          <div class="nb-name">${name}</div>
+          <div class="nb-sub">${MC_UI.salonIcon(u.salon)} ${u.salon}</div>
+        </button>`
+      ).join('');
+})();
+
+// ── Estado local ──────────────────────────────────────────────
+let chosen = null;
+let pin    = '';
+
+function selectName(name) {
+  chosen = name;
+  pin    = '';
+  const u = MC_USERS[name];
+
+  // Rellenar barra de usuario seleccionado
+  const av = document.getElementById('sel-av');
+  av.textContent  = name[0];
+  av.style.background = u.color;
+  document.getElementById('sel-name').textContent = name;
+  document.getElementById('sel-sub').textContent  =
+    `${MC_UI.salonIcon(u.salon)} ${u.salon}`;
+
+  updateDots();
+  hideError();
+
+  // Cambiar paso
+  document.getElementById('step1').classList.remove('show');
+  document.getElementById('step2').classList.add('show');
+}
+
+function backToStep1() {
+  chosen = null; pin = '';
+  document.getElementById('step2').classList.remove('show');
+  document.getElementById('step1').classList.add('show');
+  hideError();
+}
+
+// ── PIN ───────────────────────────────────────────────────────
+function tap(d) {
+  if (pin.length >= 4) return;
+  pin += d;
+  updateDots();
+  if (pin.length === 4) setTimeout(verify, 180);
+}
+
+function del() {
+  pin = pin.slice(0, -1);
+  updateDots();
+  hideError();
+}
+
+function updateDots() {
+  for (let i = 0; i < 4; i++)
+    document.getElementById('d' + i).classList.toggle('on', i < pin.length);
+}
+
+function verify() {
+  const u = MC_USERS[chosen];
+  if (pin === u.pin) {
+    // ✅ Login correcto — crear sesión y redirigir al menú
+    MC_Session.create(chosen);
+    document.getElementById('s-name').textContent = `Hola, ${chosen} 💛`;
+    document.getElementById('success').classList.add('show');
+    setTimeout(() => { window.location.href = 'menu.html'; }, 1100);
+  } else {
+    // ❌ PIN incorrecto
+    showError();
+    pin = '';
+    updateDots();
+  }
+}
+
+function showError() {
+  const el = document.getElementById('pin-error');
+  el.style.display = 'block';
+  void el.offsetWidth; // reflow para reiniciar animación
+  el.classList.add('show');
+}
+function hideError() {
+  const el = document.getElementById('pin-error');
+  el.classList.remove('show');
+  el.style.display = 'none';
+}
+</script>
+</body>
+</html>

@@ -1,0 +1,772 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Centro de Mando — Mondou Champions</title>
+<link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:wght@400;600&family=DM+Sans:wght@300;400;500;600&display=swap" rel="stylesheet">
+<script src="https://www.gstatic.com/firebasejs/10.14.1/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.14.1/firebase-firestore-compat.js"></script>
+<script src="mc_firebase.js"></script>
+<script src="mc_core.js"></script>
+<style>
+:root{
+  --gold:#C9963B;--gold-pale:#FEF9EC;
+  --black:#0D0D0D;--dark:#1A1A1A;--gray1:#2C2C2C;--gray2:#555;--gray3:#888;
+  --off:#F5F4F0;--white:#fff;
+  --green:#1D9E75;--green-l:#E1F5EE;
+  --red:#E24B4A;--red-l:#FCEBEB;
+  --amber:#D97706;--amber-l:#FEF3C7;
+  --purple:#7C3AED;
+}
+*{box-sizing:border-box;margin:0;padding:0}
+body{font-family:'DM Sans',sans-serif;background:var(--off);min-height:100vh;padding-bottom:5rem}
+.hdr{background:linear-gradient(135deg,#111,#2C2C2C);padding:1.75rem 1.25rem 1.5rem;position:relative}
+.hdr::after{content:'';position:absolute;top:0;left:0;right:0;height:3px;background:linear-gradient(90deg,#8B5E1A,#C9963B,#E8C97E,#C9963B,#8B5E1A)}
+.back{display:inline-flex;align-items:center;gap:5px;color:rgba(255,255,255,.5);font-size:11px;text-decoration:none;font-weight:500;margin-bottom:.75rem}
+.h-eye{font-size:9px;font-weight:600;letter-spacing:.16em;color:var(--gold);text-transform:uppercase;margin-bottom:.375rem}
+.h-title{font-family:'Cormorant Garamond',serif;font-size:2rem;font-weight:600;color:#fff;margin-bottom:.25rem}
+.h-sub{font-size:11.5px;color:var(--gray3)}
+.body{padding:1.25rem 1.25rem 0}
+.sec{font-size:10px;font-weight:700;color:var(--gray2);text-transform:uppercase;letter-spacing:.1em;margin:.875rem 0 .5rem;display:flex;align-items:center;gap:6px}
+.sec::after{content:'';flex:1;height:.5px;background:#E0DDD6}
+.card{background:var(--white);border-radius:12px;padding:1rem 1.25rem;box-shadow:0 1px 4px rgba(0,0,0,.06);margin-bottom:.75rem}
+.alert{padding:.625rem .875rem;border-radius:8px;font-size:12px;margin-bottom:.625rem;border-left:2px solid;line-height:1.55}
+.ag{background:var(--green-l);color:#085041;border-color:var(--green)}
+.aa{background:var(--amber-l);color:#633806;border-color:var(--amber)}
+
+/* PARTICIPATION */
+.part-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:6px}
+.part-person{border-radius:10px;padding:.625rem .5rem;text-align:center;border:.5px solid #E8E6E0;background:var(--off)}
+.part-person.done{border-color:var(--green);background:var(--green-l)}
+.part-person.partial{border-color:var(--amber);background:var(--amber-l)}
+.pp-av{width:32px;height:32px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-family:'Cormorant Garamond',serif;font-size:.9rem;font-weight:700;color:#fff;margin:0 auto .375rem}
+.pp-name{font-size:11.5px;font-weight:600;color:var(--black)}
+.pp-status{font-size:9.5px;margin-top:2px;font-weight:500;color:var(--gray3)}
+.part-person.done .pp-status{color:var(--green)}
+.part-person.partial .pp-status{color:var(--amber)}
+
+/* RESPONSES TABLE */
+.rtable{width:100%;border-collapse:collapse;font-size:11.5px}
+.rtable th{padding:5px 6px;text-align:left;font-size:9.5px;font-weight:600;color:var(--gray3);text-transform:uppercase;letter-spacing:.04em;border-bottom:.5px solid #eee}
+.rtable td{padding:6px 6px;border-bottom:.5px solid #F8F8F6;vertical-align:middle}
+.rtable tr:last-child td{border:none}
+.chip{display:inline-flex;padding:2px 7px;border-radius:100px;font-size:10px;font-weight:600}
+
+/* NOMINATIONS */
+.nom-item{display:flex;gap:8px;padding:7px 0;border-bottom:.5px solid #F5F5F3;align-items:flex-start}
+.nom-item:last-child{border:none}
+.nom-from{font-size:10px;color:var(--gray3);margin-top:2px;white-space:nowrap}
+.nom-arrow{color:var(--gold);flex-shrink:0;margin-top:2px}
+.nom-to{font-size:12px;font-weight:600;color:var(--purple)}
+.nom-reason{font-size:11.5px;color:var(--gray2)}
+.nom-detail{font-size:11px;color:var(--gray3);font-style:italic;margin-top:1px}
+
+/* BONUS */
+.bonus-row{display:flex;align-items:center;gap:10px;margin-bottom:.5rem}
+.bonus-lbl{font-size:12px;font-weight:500;color:var(--black);flex:1}
+.bonus-in{border:.5px solid #E8E6E0;border-radius:8px;padding:6px 10px;font-size:13px;font-family:'DM Sans',sans-serif;width:90px;text-align:center;background:var(--off);outline:none}
+.bonus-in:focus{border-color:var(--gold)}
+.bonus-ta{width:100%;border:.5px solid #E8E6E0;border-radius:8px;padding:.5rem .875rem;font-size:12px;font-family:'DM Sans',sans-serif;color:var(--black);resize:none;background:var(--off);outline:none;min-height:55px;margin-top:.375rem}
+.bonus-ta:focus{border-color:var(--gold)}
+
+/* VENTAS TABLE */
+.vt-wrap{overflow-x:auto;-webkit-overflow-scrolling:touch;margin:0 -.25rem}
+.vtable{border-collapse:collapse;font-size:11px;white-space:nowrap}
+.vtable th{padding:5px 6px;text-align:center;font-size:9px;font-weight:700;color:var(--gray3);text-transform:uppercase;letter-spacing:.04em;border-bottom:.5px solid #eee;background:var(--off)}
+.vtable th:first-child{text-align:left}
+.vtable td{padding:5px 6px;border-bottom:.5px solid #F8F8F6;vertical-align:middle;text-align:center}
+.vtable td:first-child{text-align:left}
+.vtable tr:last-child td{border:none}
+.vt-in{border:.5px solid #E8E6E0;border-radius:6px;padding:4px 4px;font-size:12px;font-family:'DM Sans',sans-serif;text-align:center;background:var(--off);outline:none;width:70px}
+.vt-in:focus{border-color:var(--gold);background:var(--white)}
+.vt-in.narrow{width:38px}
+
+/* CSV UPLOAD */
+.csv-row{display:flex;align-items:center;gap:8px;margin-bottom:.5rem}
+.csv-lbl{font-size:11px;color:var(--gray2);width:90px;flex-shrink:0}
+.csv-ind{font-size:10px;font-weight:600;color:var(--gray3);white-space:nowrap}
+.csv-ind.ok{color:var(--green)}
+
+/* SCORE BREAKDOWN */
+.bk-table{width:100%;border-collapse:collapse;font-size:11px}
+.bk-table th{padding:5px 6px;font-size:9px;font-weight:700;color:var(--gray3);text-transform:uppercase;letter-spacing:.04em;border-bottom:.5px solid #2C2C2C;text-align:center}
+.bk-table th:first-child{text-align:left}
+.bk-table td{padding:6px 6px;border-bottom:.5px solid #2C2C2C;vertical-align:middle;text-align:center;color:#ccc}
+.bk-table td:first-child{text-align:left;color:#fff;font-weight:600}
+.bk-table tr:last-child td{border:none}
+
+/* RESULTS BOARD */
+.results-board{background:var(--dark);border-radius:12px;padding:1rem 1.25rem;margin-bottom:.75rem}
+.rb-title{font-size:10px;font-weight:700;color:var(--gold);text-transform:uppercase;letter-spacing:.1em;margin-bottom:.75rem}
+.rb-row{display:flex;align-items:center;gap:8px;padding:7px 0;border-bottom:.5px solid #2C2C2C;font-size:12px}
+.rb-row:last-child{border:none}
+.rb-medal{font-size:15px;width:22px;text-align:center;flex-shrink:0}
+.rb-name{flex:1;font-weight:600;color:#fff}
+.rb-pts{font-size:14px;font-weight:700;color:var(--gold)}
+.rb-detail{font-size:10px;color:var(--gray3)}
+.mini-bar{height:4px;background:#2C2C2C;border-radius:2px;overflow:hidden;margin-top:3px;width:100%}
+.mini-fill{height:100%;border-radius:2px;transition:width .5s}
+
+/* ACTIONS */
+.gen-btn{width:100%;background:var(--gold);color:var(--black);border:none;border-radius:12px;padding:.875rem;font-size:13px;font-weight:700;font-family:'DM Sans',sans-serif;cursor:pointer;margin-bottom:.5rem;transition:all .18s}
+.gen-btn:active{transform:scale(.98)}
+.copy-btn{width:100%;background:var(--white);color:var(--gray2);border:.5px solid #E8E6E0;border-radius:12px;padding:.75rem;font-size:13px;font-weight:500;font-family:'DM Sans',sans-serif;cursor:pointer;margin-bottom:.5rem}
+.copy-btn.done{background:var(--green-l);color:var(--green);border-color:var(--green)}
+.wa-preview{background:#f0f0f0;border-radius:10px;padding:1rem;font-size:12px;line-height:1.85;white-space:pre-wrap;display:none;margin-bottom:.5rem;border:.5px solid #ddd}
+
+.meta-grid{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin:.625rem 0}
+.meta-lbl{font-size:10.5px;font-weight:600;color:var(--gray2);margin-bottom:4px}
+
+@keyframes up{from{opacity:0;transform:translateY(12px)}to{opacity:1;transform:translateY(0)}}
+.anim{animation:up .35s ease both}
+</style>
+</head>
+<body>
+<div class="hdr">
+  <a class="back" href="menu.html">← Inicio</a>
+  <div class="h-eye">Cierre de quincena · Solo Edna y Admin</div>
+  <div class="h-title">Centro de Mando 🎯</div>
+  <div class="h-sub">Revisa respuestas, carga ventas y publica resultados</div>
+</div>
+
+<div class="body">
+
+<!-- PARTICIPACIÓN -->
+<div class="sec anim">📋 Participación esta semana</div>
+<div class="card anim" style="animation-delay:.05s">
+  <div class="part-grid" id="part-grid"></div>
+  <div style="margin-top:.75rem;font-size:11px;color:var(--gray3);text-align:center" id="part-summary">—</div>
+</div>
+
+<!-- RESPUESTAS PISTA A -->
+<div class="sec anim" style="animation-delay:.07s">✂️ Respuestas Pista A</div>
+<div class="card anim" style="animation-delay:.08s">
+  <table class="rtable">
+    <thead><tr><th>Estilista</th><th>Puntualidad</th><th>Trato</th><th>Membresías</th><th>Pts</th></tr></thead>
+    <tbody id="resp-a"></tbody>
+  </table>
+</div>
+
+<!-- RESPUESTAS PISTA B -->
+<div class="sec anim" style="animation-delay:.1s">⚙️ Respuestas Pista B</div>
+<div class="card anim" style="animation-delay:.11s">
+  <table class="rtable">
+    <thead><tr><th>Persona</th><th>Apertura</th><th>Protocolo</th><th>Memb.caja</th><th>Confirmación</th><th>Pts</th></tr></thead>
+    <tbody id="resp-b"></tbody>
+  </table>
+</div>
+
+<!-- NOMINACIONES -->
+<div class="sec anim" style="animation-delay:.13s">💛 Nominaciones recibidas</div>
+<div class="card anim" style="animation-delay:.14s" id="nom-card">
+  <div style="color:var(--gray3);font-size:12px;text-align:center;padding:.5rem">Sin nominaciones registradas</div>
+</div>
+
+<!-- BONUS GERENCIA -->
+<div class="sec anim" style="animation-delay:.16s">⚡ Bonus de gerencia (opcional)</div>
+<div class="card anim" style="animation-delay:.17s">
+  <div class="alert aa">Máximo 50 pts por persona · Requiere justificación pública</div>
+  <div id="bonus-list"><!-- JS llenará con una fila por persona Pista B --></div>
+  <textarea class="bonus-ta" id="bonus-just" placeholder="Justificación que se leerá al equipo (aplica a todos los que reciban bonus)..."></textarea>
+</div>
+
+<!-- VENTAS -->
+<div class="sec anim" style="animation-delay:.18s">📊 Ventas · Datos del período</div>
+
+<!-- Tarjeta 1: Referencia TBHS (3 CSVs) -->
+<div class="card anim" style="animation-delay:.183s">
+  <div style="font-size:10px;font-weight:700;color:var(--gray2);text-transform:uppercase;letter-spacing:.08em;margin-bottom:.625rem">Tabla de referencia TBHS</div>
+
+  <div class="csv-row">
+    <span class="csv-lbl">Servicios CSV</span>
+    <input type="file" id="csv-srv" accept=".csv"
+      style="flex:1;font-size:11px;border:.5px solid #E8E6E0;border-radius:8px;padding:4px 8px;background:var(--off)">
+    <span class="csv-ind" id="ind-srv">—</span>
+  </div>
+  <div class="csv-row">
+    <span class="csv-lbl">Productos CSV</span>
+    <input type="file" id="csv-prd" accept=".csv"
+      style="flex:1;font-size:11px;border:.5px solid #E8E6E0;border-radius:8px;padding:4px 8px;background:var(--off)">
+    <span class="csv-ind" id="ind-prd">—</span>
+  </div>
+  <div class="csv-row">
+    <span class="csv-lbl">Membresías CSV</span>
+    <input type="file" id="csv-mem" accept=".csv"
+      style="flex:1;font-size:11px;border:.5px solid #E8E6E0;border-radius:8px;padding:4px 8px;background:var(--off)">
+    <span class="csv-ind" id="ind-mem">—</span>
+  </div>
+
+  <button class="gen-btn" onclick="generarTablaRef()" style="margin-top:.25rem;margin-bottom:.5rem">📋 Generar tabla de referencia</button>
+  <div id="ref-table-wrap" style="display:none">
+    <div style="overflow-x:auto;-webkit-overflow-scrolling:touch">
+      <table class="rtable" style="min-width:420px">
+        <thead>
+          <tr>
+            <th>Colaborador (TBHS)</th>
+            <th>Servicios $ (bruto)</th>
+            <th>Com. empleado</th>
+            <th>Productos $</th>
+            <th>Bron.</th><th>Silv.</th><th>Gold</th><th>Black</th><th>Adam.</th>
+          </tr>
+        </thead>
+        <tbody id="ref-tbody"></tbody>
+      </table>
+    </div>
+    <div style="font-size:11px;color:var(--gray3);margin-top:.375rem">☝️ Usa estos números para llenar la tabla de abajo</div>
+  </div>
+</div>
+
+<!-- Tarjeta 2: Tabla editable de ventas -->
+<div class="card anim" style="animation-delay:.188s;padding:.875rem .75rem">
+  <div class="alert aa" id="sales-alert">Sin datos guardados — el scoring usará valores de referencia.</div>
+  <div style="font-size:10px;font-weight:700;color:var(--gray2);text-transform:uppercase;letter-spacing:.08em;margin-bottom:.625rem">Ventas por estilista</div>
+
+  <div class="vt-wrap">
+    <table class="vtable">
+      <thead>
+        <tr>
+          <th>Estilista</th>
+          <th>Servicios $</th>
+          <th>Productos $</th>
+          <th>Total real $</th>
+          <th>Meta $</th>
+          <th>% Meta</th>
+          <th>Bron.</th><th>Silv.</th><th>Gold</th><th>Black</th><th>Adam.</th>
+          <th>Sueldo Q</th>
+        </tr>
+      </thead>
+      <tbody id="ventas-tbody"><!-- JS --></tbody>
+    </table>
+  </div>
+
+  <div style="height:.5px;background:#F0EDE8;margin:.875rem 0"></div>
+
+  <div class="bonus-row">
+    <span class="bonus-lbl">💳 Total membresías salón (Pista B)</span>
+    <input class="bonus-in" type="number" id="inp-memb-total" value="0" min="0" placeholder="0">
+  </div>
+  <div class="bonus-row">
+    <span class="bonus-lbl">Meta membresías salón / quincena (# membresías)</span>
+    <input class="bonus-in" type="number" id="target-memb" value="30000" min="100">
+  </div>
+  <button class="gen-btn" onclick="guardarVentas(this)" style="margin-top:.5rem">💾 Guardar datos de ventas</button>
+</div>
+
+<!-- RESULTADOS -->
+<div class="sec anim" style="animation-delay:.19s">🏆 Resultados de la quincena</div>
+<div class="results-board anim" style="animation-delay:.2s" id="results-board">
+  <div class="rb-title">Tabla de puntos</div>
+  <div style="color:var(--gray3);font-size:12px;text-align:center;padding:.5rem">
+    Pulsa "Generar resultados" para calcular
+  </div>
+</div>
+
+<button class="gen-btn anim" style="animation-delay:.22s" onclick="generate()">⚡ Generar resultados</button>
+<div class="wa-preview" id="wa-preview"></div>
+<button class="copy-btn" id="copy-wa" style="display:none" onclick="copyWA()">⎘ Copiar mensaje WhatsApp</button>
+
+</div><!-- /body -->
+
+<script>
+function esc(s) {
+  return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+}
+function fmtPesos(n) {
+  return (n && n > 0) ? '$' + Math.round(n).toLocaleString('es-MX') : '—';
+}
+
+// ── Requiere rol B o ADMIN (se verifica tras cargar usuarios) ──
+let sess = null;
+let TEAM = [];
+
+(async () => {
+  await MC_Users.init();
+  sess = MC_Session.require();
+  if (!sess || sess.rol !== 'ADMIN') {
+    alert('Esta sección es solo para el administrador.');
+    window.location.href = 'menu.html';
+    return;
+  }
+  TEAM = Object.entries(MC_USERS).filter(([,u])=>u.rol!=='ADMIN').map(([n,u])=>({name:n,...u}));
+  init();
+})();
+
+// teamA / teamB se calculan dentro de init() cuando TEAM ya está lleno
+function getTeamA() { return TEAM.filter(u=>u.rol==='A'); }
+function getTeamB() { return TEAM.filter(u=>u.rol==='B'); }
+const MEDALS = ['🥇','🥈','🥉','4️⃣','5️⃣','6️⃣','7️⃣'];
+
+// ── Estado de ventas ──────────────────────────────────────────
+let salesLoaded      = false;
+let salesServiceRev  = {};   // ingresos por servicios por estilista
+let salesProductRev  = {};   // ingresos por productos por estilista
+let salesMembs       = {};   // membresías vendidas (conteo por tipo) por estilista
+let salesMembTotal   = 0;    // total membresías salón (para Pista B)
+let salesTargetMemb  = 30000;
+
+const MEMB_TYPES = ['bronce','silver','gold','black','adam'];
+const MEMB_LABEL = {bronce:'Bron.',silver:'Silv.',gold:'Gold',black:'Black',adam:'Adam.'};
+
+// ── Tabla editable de ventas por estilista ────────────────────
+function buildVentasTable() {
+  document.getElementById('ventas-tbody').innerHTML = getTeamA().map(u => {
+    const piso  = MC_USERS[u.name]?.piso || 5000;
+    const meta  = MC_Users.calcMeta(piso);
+    const srv   = salesServiceRev[u.name] || 0;
+    const prd   = salesProductRev[u.name] || 0;
+    const total = srv + prd;
+    const pct   = meta > 0 ? Math.round(total / meta * 100) : 0;
+    const m     = salesMembs[u.name] || {};
+    const pctColor = pct >= 100 ? 'var(--green)' : pct >= 80 ? 'var(--amber)' : 'var(--red)';
+    return `<tr>
+      <td>
+        <div style="display:flex;align-items:center;gap:5px">
+          <span style="width:20px;height:20px;border-radius:50%;background:${u.color};color:#fff;font-size:10px;font-weight:700;display:inline-flex;align-items:center;justify-content:center;flex-shrink:0">${u.name[0]}</span>
+          <strong style="font-size:12px">${u.name}</strong>
+        </div>
+      </td>
+      <td><input type="number" class="vt-in" id="vt-srv-${u.name}" value="${srv}" min="0" oninput="reCalcRow('${u.name}')"></td>
+      <td><input type="number" class="vt-in" id="vt-prd-${u.name}" value="${prd}" min="0" oninput="reCalcRow('${u.name}')"></td>
+      <td id="vt-tot-${u.name}" style="font-weight:700;font-size:12px">${fmtPesos(total)}</td>
+      <td style="font-size:11px;color:var(--gray3)">${fmtPesos(meta)}</td>
+      <td id="vt-pct-${u.name}"><strong style="color:${pctColor}">${pct}%</strong></td>
+      ${MEMB_TYPES.map(t=>`<td><input type="number" class="vt-in narrow" id="vt-m-${t}-${u.name}" value="${m[t]||0}" min="0"></td>`).join('')}
+      <td style="font-size:11px;color:var(--gray3)">${fmtPesos(piso)}</td>
+    </tr>`;
+  }).join('');
+}
+
+function buildBonusSection() {
+  document.getElementById('bonus-list').innerHTML = getTeamB().map(u =>
+    `<div class="bonus-row">
+      <span class="bonus-lbl">Bonus para ${u.name}</span>
+      <input class="bonus-in" type="number" id="bonus-${u.name}" min="0" max="50" value="0" placeholder="0–50">
+    </div>`
+  ).join('');
+}
+
+function reCalcRow(name) {
+  const srv   = parseInt(document.getElementById(`vt-srv-${name}`)?.value) || 0;
+  const prd   = parseInt(document.getElementById(`vt-prd-${name}`)?.value) || 0;
+  const total = srv + prd;
+  const piso  = MC_USERS[name]?.piso || 5000;
+  const meta  = MC_Users.calcMeta(piso);
+  const pct   = meta > 0 ? Math.round(total / meta * 100) : 0;
+  const pctColor = pct >= 100 ? 'var(--green)' : pct >= 80 ? 'var(--amber)' : 'var(--red)';
+  const totEl = document.getElementById(`vt-tot-${name}`);
+  const pctEl = document.getElementById(`vt-pct-${name}`);
+  if (totEl) totEl.innerHTML = `<strong style="font-size:12px">${fmtPesos(total)}</strong>`;
+  if (pctEl) pctEl.innerHTML = `<strong style="color:${pctColor}">${pct}%</strong>`;
+}
+
+let respA = {}, respB = {}, noms = [];
+
+function renderParticipacion() {
+  document.getElementById('part-grid').innerHTML = TEAM.map(u => {
+    const hasForm = respA[u.name] || respB[u.name];
+    const hasNom  = noms.some(n => n.from === u.name);
+    const cls     = (hasForm && hasNom) ? 'done' : (hasForm || hasNom) ? 'partial' : '';
+    const status  = (hasForm && hasNom) ? '✓ Completo' : hasForm ? '⏳ Falta nom.' : hasNom ? '⏳ Falta form.' : '⏳ Pendiente';
+    return `<div class="part-person ${cls}">
+      <div class="pp-av" style="background:${u.color}">${u.name[0]}</div>
+      <div class="pp-name">${u.name}</div>
+      <div class="pp-status">${status}</div>
+    </div>`;
+  }).join('');
+  const done = TEAM.filter(u=>(respA[u.name]||respB[u.name])&&noms.some(n=>n.from===u.name)).length;
+  document.getElementById('part-summary').textContent = `${done} de ${TEAM.length} personas completaron ambos formularios`;
+}
+
+function renderRespA() {
+  document.getElementById('resp-a').innerHTML = getTeamA().map(u => {
+    const r = respA[u.name];
+    if (!r) return `<tr><td><strong style="color:${u.color}">${u.name}</strong></td><td colspan="4" style="color:var(--gray3)">Sin respuesta</td></tr>`;
+    const pts = r.q1 + r.q2 + r.q3;
+    return `<tr>
+      <td><strong style="color:${u.color}">${u.name}</strong></td>
+      <td>${['','Tarde+','1 tarde','✓ Puntual'][r.q1]||r.q1}</td>
+      <td>${r.q2}/5</td>
+      <td>${['','Ninguna','1-2','Mayoría','Todas'][r.q3]||r.q3}</td>
+      <td><span class="chip" style="background:${u.color}20;color:${u.color}">${pts}/12</span></td>
+    </tr>`;
+  }).join('');
+}
+
+function renderRespB() {
+  document.getElementById('resp-b').innerHTML = getTeamB().map(u => {
+    const r = respB[u.name];
+    if (!r) return `<tr><td><strong style="color:${u.color}">${u.name}</strong></td><td colspan="5" style="color:var(--gray3)">Sin respuesta</td></tr>`;
+    const pts = r.q1 + r.q2 + r.q3 + r.q4;
+    return `<tr>
+      <td><strong style="color:${u.color}">${u.name}</strong></td>
+      <td>${r.q1}/3</td><td>${r.q2}/5</td><td>${r.q3}/4</td><td>${r.q4}/4</td>
+      <td><span class="chip" style="background:${u.color}20;color:${u.color}">${pts}/16</span></td>
+    </tr>`;
+  }).join('');
+}
+
+function renderNoms() {
+  if (!noms.length) return;
+  document.getElementById('nom-card').innerHTML = noms.map(n =>
+    `<div class="nom-item">
+      <div class="nom-from">${esc(n.from)}</div>
+      <div class="nom-arrow">→</div>
+      <div style="flex:1">
+        <div class="nom-to">${esc(n.nominee)}</div>
+        <div class="nom-reason">🏷 ${esc(n.reason)}</div>
+        ${n.detail ? `<div class="nom-detail">"${esc(n.detail)}"</div>` : ''}
+      </div>
+      <span class="chip" style="background:#F3E8FF;color:#7C3AED">+50pts</span>
+    </div>`
+  ).join('');
+}
+
+async function init() {
+  document.getElementById('part-grid').innerHTML =
+    '<div style="grid-column:span 3;text-align:center;color:var(--gray3);font-size:12px;padding:.5rem">Cargando datos...</div>';
+  try {
+    const [rA, rB, ns, sv, prizes] = await Promise.all([
+      MC_DB.getRespA(), MC_DB.getRespB(), MC_DB.getNoms(), MC_DB.getSales(), MC_DB.getPrizes()
+    ]);
+    [respA, respB, noms] = [rA, rB, ns];
+
+    // Pre-poblar meta de membresías desde config de premios (configurada en config.html)
+    if (prizes?.targetMemb) {
+      salesTargetMemb = prizes.targetMemb;
+      document.getElementById('target-memb').value = prizes.targetMemb;
+    }
+
+    // Construir secciones dinámicas ahora que TEAM está poblado
+    buildVentasTable();
+    buildBonusSection();
+
+    if (sv) {
+      // Compatibilidad con estructura anterior (commissions → serviceRevenue)
+      salesServiceRev  = sv.serviceRevenue || sv.commissions || {};
+      salesProductRev  = sv.productRevenue || {};
+      salesMembs       = sv.membs          || {};
+      salesMembTotal   = sv.membTotal      || 0;
+      salesTargetMemb  = sv.targetMemb     || prizes?.targetMemb || 30000;
+      salesLoaded      = true;
+
+      document.getElementById('target-memb').value    = salesTargetMemb;
+      document.getElementById('inp-memb-total').value = salesMembTotal;
+
+      getTeamA().forEach(u => {
+        const srvEl = document.getElementById(`vt-srv-${u.name}`);
+        const prdEl = document.getElementById(`vt-prd-${u.name}`);
+        if (srvEl) srvEl.value = salesServiceRev[u.name] || 0;
+        if (prdEl) prdEl.value = salesProductRev[u.name] || 0;
+        const m = salesMembs[u.name] || {};
+        MEMB_TYPES.forEach(t => {
+          const el = document.getElementById(`vt-m-${t}-${u.name}`);
+          if (el) el.value = m[t] || 0;
+        });
+        reCalcRow(u.name);
+      });
+
+      const al = document.getElementById('sales-alert');
+      al.className   = 'alert ag';
+      al.textContent = '✅ Datos de ventas disponibles';
+    }
+  } catch(e) {
+    document.getElementById('part-grid').innerHTML =
+      '<div style="grid-column:span 3;text-align:center;color:var(--red);font-size:12px;padding:.5rem">Error al cargar. Verifica tu conexión.</div>';
+    return;
+  }
+  renderParticipacion();
+  renderRespA();
+  renderRespB();
+  renderNoms();
+}
+// init() se llama desde el async IIFE de arriba
+
+// ── Utilidades CSV ────────────────────────────────────────────
+function parseCSV(text) {
+  const lines = text.trim().split(/\r?\n/);
+  if (!lines.length) return [];
+  const hdrs = lines[0].split(',').map(h => h.trim().replace(/^"|"$/g,''));
+  return lines.slice(1).filter(l=>l.trim()).map(line => {
+    const vals = line.split(',').map(v => v.trim().replace(/^"|"$/g,''));
+    const row  = {};
+    hdrs.forEach((h,i) => { row[h] = vals[i] ?? ''; });
+    return row;
+  });
+}
+function parsePesos(s) {
+  return parseFloat(String(s??'0').replace(/[$,\s]/g,'')) || 0;
+}
+function readFile(file) {
+  return new Promise((res, rej) => {
+    const r = new FileReader();
+    r.onload = e => res(e.target.result);
+    r.onerror = rej;
+    r.readAsText(file, 'UTF-8');
+  });
+}
+
+// ── Tabla de referencia TBHS (3 CSVs, solo lectura) ──────────
+async function generarTablaRef() {
+  const srvFile = document.getElementById('csv-srv').files[0];
+  const prdFile = document.getElementById('csv-prd').files[0];
+  const memFile = document.getElementById('csv-mem').files[0];
+
+  if (!srvFile && !prdFile && !memFile) {
+    alert('Selecciona al menos un archivo CSV.');
+    return;
+  }
+
+  const srvByCol = {}, srvComByCol = {}, prdByCol = {}, memByAge = {};
+
+  if (srvFile) {
+    const rows = parseCSV(await readFile(srvFile));
+    rows.forEach(r => {
+      const name = (r['Colaborador'] || r['colaborador'] || '').trim();
+      if (!name) return;
+      // Leer ingreso bruto ("Total"), NO la comisión del empleado
+      // "Comisiones Empleado" es ~10% del total — NO es el ingreso real
+      const amt = parsePesos(r['Total'] || r['total'] || r['Importe'] || r['Monto'] || '0');
+      srvByCol[name] = (srvByCol[name] || 0) + amt;
+      // Guardar comisión del empleado por separado (referencia)
+      const com = parsePesos(r['Comisiones Empleado'] || r['Comisiones'] || '0');
+      srvComByCol[name] = (srvComByCol[name] || 0) + com;
+    });
+    const ind = document.getElementById('ind-srv');
+    ind.textContent = `✓ ${rows.length} registros`;
+    ind.className = 'csv-ind ok';
+  }
+
+  if (prdFile) {
+    const rows = parseCSV(await readFile(prdFile));
+    rows.forEach(r => {
+      const name = (r['Colaborador'] || r['colaborador'] || r['Agent'] || '').trim();
+      if (!name) return;
+      const amt = parsePesos(r['Total'] || r['Monto'] || r['Importe'] || '0');
+      prdByCol[name] = (prdByCol[name] || 0) + amt;
+    });
+    const ind = document.getElementById('ind-prd');
+    ind.textContent = `✓ ${rows.length} registros`;
+    ind.className = 'csv-ind ok';
+  }
+
+  if (memFile) {
+    const rows = parseCSV(await readFile(memFile));
+    rows.forEach(r => {
+      const agent   = (r['Agent'] || r['agent'] || r['Agente'] || '').trim();
+      const product = (r['Product'] || r['product'] || r['Producto'] || '').toLowerCase();
+      if (!agent) return;
+      if (!memByAge[agent]) memByAge[agent] = {bronce:0,silver:0,gold:0,black:0,adam:0};
+      if      (product.includes('adamantium') || product.includes('adam')) memByAge[agent].adam++;
+      else if (product.includes('black'))  memByAge[agent].black++;
+      else if (product.includes('gold'))   memByAge[agent].gold++;
+      else if (product.includes('silver')) memByAge[agent].silver++;
+      else if (product.includes('bronce') || product.includes('bronze')) memByAge[agent].bronce++;
+    });
+    const ind = document.getElementById('ind-mem');
+    ind.textContent = `✓ ${rows.length} registros`;
+    ind.className = 'csv-ind ok';
+  }
+
+  const allNames = [...new Set([...Object.keys(srvByCol),...Object.keys(prdByCol),...Object.keys(memByAge)])].sort();
+
+  document.getElementById('ref-tbody').innerHTML = allNames.map(name => {
+    const srv = srvByCol[name]    || 0;
+    const com = srvComByCol[name] || 0;
+    const prd = prdByCol[name]    || 0;
+    const m   = memByAge[name]    || {};
+    return `<tr>
+      <td>${esc(name)}</td>
+      <td><strong>${fmtPesos(srv)}</strong></td>
+      <td style="color:var(--gray3);font-size:10.5px">${fmtPesos(com)}</td>
+      <td><strong>${fmtPesos(prd)}</strong></td>
+      <td>${m.bronce||'—'}</td><td>${m.silver||'—'}</td>
+      <td>${m.gold||'—'}</td><td>${m.black||'—'}</td>
+      <td>${m.adam||'—'}</td>
+    </tr>`;
+  }).join('');
+
+  document.getElementById('ref-table-wrap').style.display = 'block';
+}
+
+// ── Guardar datos de ventas a Firestore ───────────────────────
+async function guardarVentas(btn) {
+  const serviceRevenue = {}, productRevenue = {}, membs = {};
+  getTeamA().forEach(u => {
+    serviceRevenue[u.name] = Math.max(0, parseInt(document.getElementById(`vt-srv-${u.name}`)?.value) || 0);
+    productRevenue[u.name] = Math.max(0, parseInt(document.getElementById(`vt-prd-${u.name}`)?.value) || 0);
+    membs[u.name] = {};
+    MEMB_TYPES.forEach(t => {
+      membs[u.name][t] = Math.max(0, parseInt(document.getElementById(`vt-m-${t}-${u.name}`)?.value) || 0);
+    });
+  });
+  const membTotal     = Math.max(0, parseInt(document.getElementById('inp-memb-total').value) || 0);
+  salesTargetMemb     = Math.max(1, parseInt(document.getElementById('target-memb').value) || 30000);
+
+  btn.disabled = true; btn.textContent = 'Guardando...';
+  try {
+    await MC_DB.saveSales({ serviceRevenue, productRevenue, membs, membTotal, targetMemb: salesTargetMemb });
+    salesServiceRev = serviceRevenue;
+    salesProductRev = productRevenue;
+    salesMembs      = membs;
+    salesMembTotal  = membTotal;
+    salesLoaded     = true;
+    const al = document.getElementById('sales-alert');
+    al.className   = 'alert ag';
+    al.textContent = '✅ Datos de ventas guardados correctamente';
+  } catch(e) {
+    alert('Error al guardar. Verifica tu conexión.');
+  }
+  btn.disabled = false; btn.textContent = '💾 Guardar datos de ventas';
+}
+
+// ── Puntos de ticket (B1) — usa meta calculada desde piso ─────
+function ticketPts(name, rol) {
+  if (!salesLoaded) return rol === 'A' ? 180 : 200;
+  if (rol === 'A') {
+    const srv   = salesServiceRev[name] || 0;
+    const prd   = salesProductRev[name] || 0;
+    const total = srv + prd;
+    const piso  = MC_USERS[name]?.piso || 5000;
+    const meta  = Math.max(1, MC_Users.calcMeta(piso));
+    return Math.min(Math.round((total / meta) * 300), 330);
+  }
+  // Pista B: membresías totales vs meta del salón
+  return Math.min(Math.round((salesMembTotal / salesTargetMemb) * 300), 330);
+}
+
+// ── Calcular puntos completos con desglose ───────────────────
+function scoreDetail(name, rol) {
+  const nomCount = noms.filter(n => n.nominee === name).length;
+  const hasForms = rol === 'A' ? !!respA[name] : !!respB[name];
+  const b1 = ticketPts(name, rol);
+  const rawB3 = Math.min(nomCount * 25, 100) + (hasForms ? 50 : 0);
+  let b2, b3used, total;
+  if (rol === 'A') {
+    const r = respA[name] || {};
+    b2      = Math.round(((r.q1||0)/3)*75 + ((r.q2||0)/5)*100 + ((r.q3||0)/4)*75);
+    b3used  = rawB3;
+    total   = Math.round(b1*0.6 + b2*0.25 + b3used*0.15);
+  } else {
+    const r = respB[name] || {};
+    const bonus = parseInt(document.getElementById(`bonus-${name}`)?.value) || 0;
+    b2      = Math.round(((r.q1||0)/3)*75 + ((r.q2||0)/5)*100 + ((r.q3||0)/4)*75 + ((r.q4||0)/4)*50);
+    b3used  = Math.min(rawB3 + bonus, 200);
+    total   = Math.round(b1*0.5 + b2*0.3 + b3used*0.2);
+  }
+  return { b1, b2, b3: rawB3, total };
+}
+
+function score(name, rol) { return scoreDetail(name, rol).total; }
+
+// ── Generar resultados ────────────────────────────────────────
+function generate() {
+  const details = {};
+  TEAM.forEach(u => { details[u.name] = scoreDetail(u.name, u.rol); });
+  const rankA  = getTeamA().map(u=>({name:u.name,color:u.color,...details[u.name]})).sort((a,b)=>b.total-a.total);
+  const rankB  = getTeamB().map(u=>({name:u.name,color:u.color,...details[u.name]})).sort((a,b)=>b.total-a.total);
+  const maxPts = Math.max(...Object.values(details).map(d=>d.total), 1);
+  const nomTally = Object.entries(
+    noms.reduce((acc,n)=>{ acc[n.nominee]=(acc[n.nominee]||0)+1; return acc; },{})
+  ).sort((a,b)=>b[1]-a[1]);
+  const topNomCount = nomTally[0]?.[1] || 0;
+  const topNoms = nomTally.filter(([,c]) => c === topNomCount); // todas las empatadas
+
+  // ── Rankings ──
+  const rankHtml = (rank, pista) => `
+    <div class="rb-title">${pista}</div>
+    ${rank.map(({name,color,total,b1,b2,b3},i)=>`
+    <div class="rb-row">
+      <span class="rb-medal">${MEDALS[i]||'·'}</span>
+      <div style="flex:1">
+        <div style="display:flex;align-items:center;gap:6px">
+          <span class="rb-name">${name}</span>
+          ${noms.filter(n=>n.nominee===name).length>0?`<span style="font-size:10px;color:#C9963B">⭐ ${noms.filter(n=>n.nominee===name).length}</span>`:''}
+        </div>
+        <div style="font-size:9.5px;color:var(--gray3);margin-top:2px">B1:${b1} · B2:${b2} · B3:${b3}</div>
+        <div class="mini-bar"><div class="mini-fill" style="width:${total/maxPts*100}%;background:${color}"></div></div>
+      </div>
+      <span class="rb-pts" style="color:${color}">${total}</span>
+    </div>`).join('')}`;
+
+  // ── Tabla de desglose B1/B2/B3 ──
+  const allRank = [...rankA, ...rankB];
+  const bkHtml = `
+    <div class="rb-title" style="margin-top:1.25rem">Desglose de puntos</div>
+    <div style="overflow-x:auto;margin:0 -.25rem">
+    <table class="bk-table" style="min-width:300px">
+      <thead>
+        <tr>
+          <th>Persona</th>
+          <th>B1 Ventas</th>
+          <th>B2 Desempeño</th>
+          <th>B3 Equipo</th>
+          <th>Total</th>
+        </tr>
+      </thead>
+      <tbody>
+        ${allRank.map(({name,color,total,b1,b2,b3})=>`
+        <tr>
+          <td><span style="display:inline-flex;align-items:center;gap:5px">
+            <span style="width:14px;height:14px;border-radius:50%;background:${color};display:inline-block;flex-shrink:0"></span>
+            ${name}
+          </span></td>
+          <td>${b1}<span style="font-size:9px;color:var(--gray3)">/330</span></td>
+          <td>${b2}</td>
+          <td>${b3}</td>
+          <td style="font-weight:700;color:${color}">${total}</td>
+        </tr>`).join('')}
+      </tbody>
+    </table>
+    </div>`;
+
+  document.getElementById('results-board').innerHTML =
+    rankHtml(rankA, 'Pista A — Estilistas') +
+    rankHtml(rankB, 'Pista B — Operación') +
+    (topNoms.length ? `<div style="margin-top:1rem;padding-top:.875rem;border-top:.5px solid #333">
+      <div style="font-size:10px;color:var(--gray3);margin-bottom:.375rem">⭐ Más nominada${topNoms.length>1?' (empate)':''} esta semana</div>
+      ${topNoms.map(([name,cnt])=>`<div style="font-size:13px;font-weight:600;color:var(--gold)">⭐ ${name} — ${cnt} nominación${cnt>1?'es':''}</div>`).join('')}
+    </div>` : '') +
+    bkHtml;
+
+  const msg =
+`🏆 *MONDOU CHAMPIONS*
+${new Date().toLocaleDateString('es-MX',{day:'numeric',month:'long',year:'numeric'})}
+
+━━━━━━━━━━━━━━━━━━━
+✂️ *PISTA A — Estilistas*
+━━━━━━━━━━━━━━━━━━━
+${rankA.map(({name,total},i)=>`${MEDALS[i]||'·'} *${name}* — ${total} pts`).join('\n')}
+
+━━━━━━━━━━━━━━━━━━━
+⚙️ *PISTA B — Operación*
+━━━━━━━━━━━━━━━━━━━
+${rankB.map(({name,total},i)=>`${MEDALS[i]||'·'} *${name}* — ${total} pts`).join('\n')}
+${topNoms.length?`\n━━━━━━━━━━━━━━━━━━━\n⭐ *MÁS NOMINADA${topNoms.length>1?' (empate)':''} *\n━━━━━━━━━━━━━━━━━━━\n${topNoms.map(([name,cnt])=>`⭐ *${name}* — ${cnt} nominación${cnt>1?'es':''}`).join('\n')}`:''}
+
+━━━━━━━━━━━━━━━━━━━
+📌 *NOTA*
+━━━━━━━━━━━━━━━━━━━
+${salesLoaded ? 'Puntos calculados con ventas reales del período ✓' : 'Los puntos de ventas se actualizan cuando se procesa el reporte TBHS.'}
+
+Con cariño,
+Mondou Champions 💛`;
+
+  const wa = document.getElementById('wa-preview');
+  wa.textContent = msg;
+  wa.style.display = 'block';
+  const copyBtn = document.getElementById('copy-wa');
+  copyBtn.style.display = 'block';
+  copyBtn._msg = msg;
+}
+
+function copyWA() {
+  const b = document.getElementById('copy-wa');
+  navigator.clipboard.writeText(b._msg||'').then(() => {
+    b.textContent = '✓ Copiado'; b.classList.add('done');
+    setTimeout(() => { b.textContent = '⎘ Copiar mensaje WhatsApp'; b.classList.remove('done'); }, 2200);
+  });
+}
+</script>
+</body>
+</html>

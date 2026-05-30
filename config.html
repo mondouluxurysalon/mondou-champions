@@ -1,0 +1,805 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Configuración — Mondou Champions</title>
+<link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:wght@400;600&family=DM+Sans:wght@300;400;500;600&display=swap" rel="stylesheet">
+<script src="https://www.gstatic.com/firebasejs/10.14.1/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.14.1/firebase-firestore-compat.js"></script>
+<script src="mc_firebase.js"></script>
+<script src="mc_core.js"></script>
+<style>
+:root{
+  --gold:#C9963B;--gold-pale:#FEF9EC;
+  --black:#0D0D0D;--dark:#1A1A1A;--gray1:#2C2C2C;--gray2:#555;--gray3:#888;
+  --off:#F5F4F0;--white:#fff;
+  --green:#1D9E75;--green-l:#E1F5EE;
+  --red:#E24B4A;--red-l:#FCEBEB;
+  --amber:#D97706;--amber-l:#FEF3C7;
+}
+*{box-sizing:border-box;margin:0;padding:0}
+body{font-family:'DM Sans',sans-serif;background:var(--off);min-height:100vh;padding-bottom:5rem}
+.hdr{background:var(--dark);padding:1.75rem 1.25rem 1.5rem;position:relative}
+.hdr::after{content:'';position:absolute;top:0;left:0;right:0;height:3px;background:linear-gradient(90deg,#8B5E1A,#C9963B,#E8C97E,#C9963B,#8B5E1A)}
+.back{display:inline-flex;align-items:center;gap:5px;color:rgba(255,255,255,.5);font-size:11px;text-decoration:none;font-weight:500;margin-bottom:.75rem}
+.h-eye{font-size:9px;font-weight:600;letter-spacing:.16em;color:var(--gold);text-transform:uppercase;margin-bottom:.375rem}
+.h-title{font-family:'Cormorant Garamond',serif;font-size:2rem;font-weight:600;color:#fff;margin-bottom:.375rem}
+.h-sub{font-size:11.5px;color:var(--gray3)}
+.body{padding:1.25rem 1.25rem 0}
+.sec{font-size:10px;font-weight:700;color:var(--gray2);text-transform:uppercase;letter-spacing:.1em;margin:.875rem 0 .5rem;display:flex;align-items:center;gap:6px}
+.sec::after{content:'';flex:1;height:.5px;background:#E0DDD6}
+.card{background:var(--white);border-radius:12px;padding:1rem 1.25rem;box-shadow:0 1px 4px rgba(0,0,0,.06);margin-bottom:.75rem}
+.alert{padding:.625rem .875rem;border-radius:8px;font-size:12px;margin-bottom:.625rem;border-left:2px solid var(--gold);background:var(--gold-pale);color:#555;line-height:1.55}
+.alert.ag{border-color:var(--green);background:var(--green-l);color:#085041}
+.alert.ar{border-color:var(--red);background:var(--red-l);color:#7A1616}
+
+/* FORM FIELDS */
+.field-row{display:grid;gap:8px;margin-bottom:.625rem}
+.field-row.two{grid-template-columns:1fr 1fr}
+.field-row.three{grid-template-columns:1fr 1fr 1fr}
+.field-lbl{font-size:10.5px;font-weight:600;color:var(--gray2);margin-bottom:3px}
+.field-in{
+  border:.5px solid #E8E6E0;border-radius:8px;padding:7px 10px;
+  font-size:13px;font-family:'DM Sans',sans-serif;color:var(--black);
+  background:var(--off);outline:none;width:100%;transition:border-color .18s;
+}
+.field-in:focus{border-color:var(--gold);background:var(--white)}
+.field-sel{
+  border:.5px solid #E8E6E0;border-radius:8px;padding:7px 10px;
+  font-size:13px;font-family:'DM Sans',sans-serif;color:var(--black);
+  background:var(--off);outline:none;width:100%;
+  appearance:none;-webkit-appearance:none;
+  background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='6'%3E%3Cpath d='M0 0l5 6 5-6z' fill='%23888'/%3E%3C/svg%3E");
+  background-repeat:no-repeat;background-position:right 10px center;
+  padding-right:28px;transition:border-color .18s;
+}
+.field-sel:focus{border-color:var(--gold);background:var(--white)}
+
+/* COMPUTED DISPLAY */
+.computed-box{background:var(--gold-pale);border:.5px solid #E8D9A0;border-radius:8px;padding:7px 12px;font-size:12px;color:#7A5206}
+.computed-val{font-size:16px;font-weight:700;color:var(--gold);display:block;margin-top:1px}
+
+/* COLOR PALETTE */
+.palette{display:flex;gap:6px;flex-wrap:wrap;margin-top:4px}
+.swatch{width:26px;height:26px;border-radius:50%;cursor:pointer;border:2.5px solid transparent;transition:all .15s;flex-shrink:0}
+.swatch.sel{border-color:#000;transform:scale(1.15)}
+
+/* SAVE BTN */
+.save-btn{
+  width:100%;background:var(--gold);color:var(--black);
+  border:none;border-radius:12px;padding:.875rem;
+  font-size:14px;font-weight:700;font-family:'DM Sans',sans-serif;
+  cursor:pointer;transition:all .18s;margin-top:.25rem;
+}
+.save-btn:active{transform:scale(.98)}
+.save-btn.saved{background:var(--green);color:#fff}
+.save-btn.del{background:var(--red);color:#fff}
+
+/* TEAM TABLE */
+.team-table{width:100%;border-collapse:collapse;font-size:11.5px}
+.team-table th{text-align:left;font-size:9.5px;font-weight:600;color:var(--gray3);text-transform:uppercase;letter-spacing:.04em;padding:5px 8px;border-bottom:.5px solid #E8E6E0;white-space:nowrap}
+.team-table td{padding:7px 8px;border-bottom:.5px solid #F5F5F3;vertical-align:middle}
+.team-table tr:last-child td{border:none}
+.team-table tr.editing{background:#FFFBEF}
+.u-av{width:28px;height:28px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-family:'Cormorant Garamond',serif;font-size:.85rem;font-weight:600;color:#fff;flex-shrink:0}
+.rol-badge{display:inline-flex;padding:2px 8px;border-radius:100px;font-size:10px;font-weight:600}
+.t-in{border:.5px solid #E8E6E0;border-radius:6px;padding:4px 7px;font-size:12px;font-family:'DM Sans',sans-serif;width:68px;text-align:center;background:var(--off);outline:none}
+.t-in:focus{border-color:var(--gold)}
+.t-in.wide{width:90px;text-align:left}
+.t-in.pin{width:60px;letter-spacing:.12em;font-weight:600}
+.act-btn{padding:3px 9px;border-radius:6px;font-size:10px;font-weight:600;cursor:pointer;border:.5px solid;font-family:'DM Sans',sans-serif;white-space:nowrap}
+.act-btn.edit{border-color:#E8E6E0;background:var(--off);color:var(--gray2)}
+.act-btn.save{border-color:var(--green);background:var(--green-l);color:var(--green)}
+.act-btn.del{border-color:var(--red);background:var(--red-l);color:var(--red)}
+.base-tag{font-size:9px;color:var(--gray3);font-style:italic}
+
+/* LINKS */
+.link-section{background:var(--dark);border-radius:12px;padding:1rem 1.25rem;margin-bottom:.75rem}
+.ls-title{font-size:10px;font-weight:700;color:var(--gold);text-transform:uppercase;letter-spacing:.1em;margin-bottom:.75rem}
+.url-input{display:flex;gap:8px;margin-bottom:.875rem}
+.url-field{flex:1;border:.5px solid #444;border-radius:8px;padding:7px 10px;font-size:12px;font-family:'DM Sans',sans-serif;background:#1A1A1A;color:#fff;outline:none}
+.url-field:focus{border-color:var(--gold)}
+.url-btn{padding:7px 14px;border-radius:8px;border:.5px solid var(--gold);background:transparent;color:var(--gold);font-size:12px;font-weight:600;cursor:pointer;white-space:nowrap;font-family:'DM Sans',sans-serif}
+.link-item{display:flex;align-items:center;gap:10px;padding:6px 0;border-bottom:.5px solid #222;font-size:12px}
+.link-item:last-child{border:none}
+.link-icon{font-size:1.1rem;flex-shrink:0}
+.link-info{flex:1;min-width:0}
+.link-ttl{font-weight:500;color:#fff;font-size:12px}
+.link-who{font-size:10px;color:var(--gray3);margin-top:1px}
+.link-url{font-size:10px;color:var(--gold);word-break:break-all;margin-top:2px;font-family:monospace}
+.copy-link{padding:4px 10px;border-radius:6px;border:.5px solid #444;background:transparent;color:var(--gray3);font-size:10px;cursor:pointer;white-space:nowrap;font-family:'DM Sans',sans-serif}
+.copy-link.done{border-color:var(--green);color:var(--green)}
+.wa-box{background:#1A1A1A;border-radius:10px;padding:1rem;font-size:12px;color:#ddd;line-height:1.8;white-space:pre-wrap;font-family:'DM Sans',sans-serif;border:.5px solid #333;margin-bottom:.625rem;min-height:80px}
+.copy-wa{width:100%;background:transparent;border:.5px solid #444;border-radius:8px;padding:.625rem;font-size:12px;color:var(--gray3);font-family:'DM Sans',sans-serif;cursor:pointer;transition:all .18s}
+.copy-wa.done{border-color:var(--green);color:var(--green)}
+
+@keyframes up{from{opacity:0;transform:translateY(12px)}to{opacity:1;transform:translateY(0)}}
+.anim{animation:up .35s ease both}
+</style>
+</head>
+<body>
+<div class="hdr">
+  <a class="back" href="menu.html">← Inicio</a>
+  <div class="h-eye">Solo Admin · Configuración</div>
+  <div class="h-title">Gestión del Equipo ⚙️</div>
+  <div class="h-sub">Alta de personas, PINs, metas y sucursales.</div>
+</div>
+
+<div class="body">
+
+<!-- ALTA DE NUEVA PERSONA -->
+<div class="sec anim">➕ Alta de nueva persona</div>
+<div class="card anim" style="animation-delay:.04s">
+  <div id="alta-msg"></div>
+
+  <div class="field-row two">
+    <div>
+      <div class="field-lbl">Nombre (como aparece en la app)</div>
+      <input class="field-in" id="nw-name" type="text" placeholder="Ej: Ana" maxlength="20">
+    </div>
+    <div>
+      <div class="field-lbl">PIN (cumpleaños DDMM)</div>
+      <input class="field-in" id="nw-pin" type="text" placeholder="1503" maxlength="4">
+    </div>
+  </div>
+
+  <div class="field-row two">
+    <div>
+      <div class="field-lbl">Sucursal</div>
+      <select class="field-sel" id="nw-salon">
+        <option value="Colima">Colima</option>
+        <option value="San Pedro">San Pedro</option>
+        <option value="Manzanillo">Manzanillo</option>
+      </select>
+    </div>
+    <div>
+      <div class="field-lbl">Rol</div>
+      <select class="field-sel" id="nw-rol">
+        <option value="A">Pista A — Estilista</option>
+        <option value="B">Pista B — Operación</option>
+        <option value="ADMIN">Admin</option>
+      </select>
+    </div>
+  </div>
+
+  <div class="field-row">
+    <div>
+      <div class="field-lbl">Sueldo piso / quincena ($)</div>
+      <input class="field-in" id="nw-piso" type="number" placeholder="6000" min="0" oninput="updateNwMeta()">
+    </div>
+  </div>
+
+  <div class="field-row two" style="margin-bottom:.75rem">
+    <div class="computed-box">
+      <span>Meta /Q (calculada)</span>
+      <span class="computed-val" id="nw-meta-val">—</span>
+    </div>
+    <div class="computed-box">
+      <span>Gana en meta</span>
+      <span class="computed-val" id="nw-gana-val">—</span>
+    </div>
+  </div>
+
+  <div style="margin-bottom:.75rem">
+    <div class="field-lbl" style="margin-bottom:6px">Color de avatar</div>
+    <div class="palette" id="nw-palette"></div>
+    <input type="hidden" id="nw-color" value="#7C3AED">
+  </div>
+
+  <button class="save-btn" onclick="altaPersona()">➕ Dar de alta</button>
+</div>
+
+<!-- TABLA DEL EQUIPO -->
+<div class="sec anim" style="animation-delay:.06s">👥 Equipo completo</div>
+<div class="alert anim" style="animation-delay:.07s">⚠️ Página confidencial · Los PINs son visibles aquí · No compartas el link.</div>
+<div class="card anim" style="animation-delay:.08s;padding:.75rem .5rem">
+  <div style="overflow-x:auto;-webkit-overflow-scrolling:touch">
+    <table class="team-table">
+      <thead>
+        <tr>
+          <th colspan="2">Persona</th>
+          <th>Rol</th>
+          <th>Piso /Q</th>
+          <th>Meta /Q</th>
+          <th>Gana en Meta</th>
+          <th>PIN</th>
+          <th></th>
+        </tr>
+      </thead>
+      <tbody id="team-tbody"></tbody>
+    </table>
+  </div>
+</div>
+
+<!-- USUARIOS DESACTIVADOS -->
+<div id="inactive-section" style="display:none">
+  <div class="sec anim">⚠️ Usuarios desactivados</div>
+  <div class="alert ar anim" style="font-size:11px">
+    Estas personas no aparecen en ninguna parte de la app. Puedes reactivarlas o borrarlas definitivamente.
+  </div>
+  <div class="card anim" style="padding:.75rem 1rem">
+    <div id="inactive-list"></div>
+  </div>
+</div>
+
+<!-- PREMIOS DE LA QUINCENA -->
+<div class="sec anim" style="animation-delay:.095s">🏆 Premios de la quincena</div>
+<div class="card anim" style="animation-delay:.1s">
+  <div id="prizes-msg"></div>
+  <div style="font-size:11px;color:var(--gray3);margin-bottom:.875rem;line-height:1.55">
+    Escribe qué gana cada lugar. Se muestra en la página de Premios que ve todo el equipo.
+    Si dejas un campo vacío, aparecerá como "Próximamente".
+  </div>
+
+  <div style="font-size:10px;font-weight:700;color:var(--gray2);text-transform:uppercase;letter-spacing:.08em;margin-bottom:.5rem">✂️ Pista A — Estilistas</div>
+  <div class="field-row" style="margin-bottom:.375rem">
+    <div><div class="field-lbl">🥇 1er lugar</div>
+    <input class="field-in" id="pz-a1" type="text" placeholder="Ej: Bono $1,000 en efectivo"></div>
+  </div>
+  <div class="field-row" style="margin-bottom:.375rem">
+    <div><div class="field-lbl">🥈 2do lugar</div>
+    <input class="field-in" id="pz-a2" type="text" placeholder="Ej: Bono $500 en efectivo"></div>
+  </div>
+  <div class="field-row" style="margin-bottom:.875rem">
+    <div><div class="field-lbl">🥉 3er lugar</div>
+    <input class="field-in" id="pz-a3" type="text" placeholder="Ej: Servicio Mondou gratis a elegir"></div>
+  </div>
+
+  <div style="font-size:10px;font-weight:700;color:var(--gray2);text-transform:uppercase;letter-spacing:.08em;margin-bottom:.5rem">⚙️ Pista B — Operación</div>
+  <div class="field-row" style="margin-bottom:.375rem">
+    <div><div class="field-lbl">🥇 1er lugar</div>
+    <input class="field-in" id="pz-b1" type="text" placeholder="Ej: Bono $800 en efectivo"></div>
+  </div>
+  <div class="field-row" style="margin-bottom:.875rem">
+    <div><div class="field-lbl">🥈 2do lugar</div>
+    <input class="field-in" id="pz-b2" type="text" placeholder="Ej: Servicio Mondou gratis"></div>
+  </div>
+
+  <div style="font-size:10px;font-weight:700;color:var(--gray2);text-transform:uppercase;letter-spacing:.08em;margin-bottom:.5rem">💛 Más nominada &amp; 🎯 Reto colectivo</div>
+  <div class="field-row" style="margin-bottom:.375rem">
+    <div><div class="field-lbl">💛 Premio más nominada</div>
+    <input class="field-in" id="pz-nom" type="text" placeholder="Ej: Día libre + sesión de spa en Mondou"></div>
+  </div>
+  <div class="field-row" style="margin-bottom:.375rem">
+    <div><div class="field-lbl">🎯 Premio reto colectivo</div>
+    <input class="field-in" id="pz-col" type="text" placeholder="Ej: Saldo Mondou $300 por persona"></div>
+  </div>
+  <div class="field-row" style="margin-bottom:.375rem">
+    <div>
+      <div class="field-lbl">🎯 Meta de membresías quincena (número de membresías)</div>
+      <input class="field-in" id="pz-target-memb" type="number" placeholder="Ej: 30" min="0">
+      <div style="font-size:10px;color:var(--gray3);margin-top:3px">Número de membresías a vender en el período. Aparece en la barra de progreso colectivo.</div>
+    </div>
+  </div>
+  <div class="bonus-row" style="margin-bottom:.875rem">
+    <label style="display:flex;align-items:center;gap:8px;cursor:pointer;font-size:12px;color:var(--black)">
+      <input type="checkbox" id="pz-col-active" checked style="width:16px;height:16px;accent-color:var(--gold)">
+      Reto colectivo activo esta quincena
+    </label>
+  </div>
+
+  <button class="save-btn" onclick="guardarPremios(this)">💾 Guardar premios</button>
+</div>
+
+<!-- ASIGNAR PREMIOS INDIVIDUALES -->
+<div class="sec anim" style="animation-delay:.105s">🎁 Asignar premios al equipo</div>
+<div class="card anim" style="animation-delay:.107s">
+  <div id="assign-msg"></div>
+  <div class="alert" style="margin-bottom:.75rem;font-size:11.5px">
+    Después de generar los resultados en el Centro de Mando, asigna aquí el premio de cada persona.
+    Ella lo verá en la página de Premios la próxima vez que entre.
+  </div>
+  <div id="assign-list">
+    <div style="text-align:center;color:var(--gray3);font-size:12px;padding:.5rem">Cargando equipo...</div>
+  </div>
+</div>
+
+<!-- LINKS -->
+<div class="sec anim" style="animation-delay:.11s">Links para el equipo</div>
+<div class="link-section anim" style="animation-delay:.11s">
+  <div class="ls-title">URL de tu sitio en Netlify</div>
+  <div class="url-input">
+    <input class="url-field" id="base-url" type="text"
+      placeholder="https://mondou-champions.netlify.app"
+      oninput="updateLinks()">
+    <button class="url-btn" onclick="saveUrl()">Guardar</button>
+  </div>
+  <div id="link-list">
+    <div style="color:var(--gray3);font-size:12px;text-align:center;padding:.5rem">Ingresa tu URL arriba para generar los links</div>
+  </div>
+</div>
+
+<!-- MENSAJE WHATSAPP -->
+<div class="sec anim" style="animation-delay:.13s">Mensaje de lanzamiento</div>
+<div class="link-section anim" style="animation-delay:.14s">
+  <div class="ls-title">Copia y pega en el grupo de WhatsApp</div>
+  <div class="wa-box" id="wa-msg">Ingresa la URL arriba para generar el mensaje...</div>
+  <button class="copy-wa" id="copy-wa" onclick="copyWA()">⎘ Copiar mensaje</button>
+</div>
+
+</div><!-- /body -->
+
+<script>
+let sess = null;
+
+// ── Paleta de colores ─────────────────────────────────────────
+const PALETTE_COLORS = [
+  '#7C3AED','#2563EB','#0891B2','#059669','#D97706',
+  '#DC2626','#DB2777','#EA580C','#65A30D','#6B7280',
+  '#C9963B','#7E22CE','#1D4ED8','#0F766E','#92400E'
+];
+let selectedColor = '#7C3AED';
+
+function buildPalette() {
+  const wrap = document.getElementById('nw-palette');
+  wrap.innerHTML = PALETTE_COLORS.map(c =>
+    `<div class="swatch${c===selectedColor?' sel':''}" style="background:${c}" onclick="pickColor('${c}',this)" title="${c}"></div>`
+  ).join('');
+}
+buildPalette();
+
+function pickColor(c, el) {
+  selectedColor = c;
+  document.getElementById('nw-color').value = c;
+  document.querySelectorAll('.swatch').forEach(s => s.classList.remove('sel'));
+  el.classList.add('sel');
+}
+
+function fmtQ(n) {
+  return n ? '$' + Math.round(n).toLocaleString('es-MX') : '—';
+}
+
+function updateNwMeta() {
+  const piso = parseInt(document.getElementById('nw-piso').value) || 0;
+  const meta = piso ? MC_Users.calcMeta(piso) : 0;
+  const gana = meta ? Math.round(meta * 0.1) : 0;
+  document.getElementById('nw-meta-val').textContent = fmtQ(meta);
+  document.getElementById('nw-gana-val').textContent = fmtQ(gana);
+}
+
+// ── Alta de persona ───────────────────────────────────────────
+async function altaPersona() {
+  const name  = document.getElementById('nw-name').value.trim();
+  const pin   = document.getElementById('nw-pin').value.trim();
+  const salon = document.getElementById('nw-salon').value;
+  const rol   = document.getElementById('nw-rol').value;
+  const piso  = parseInt(document.getElementById('nw-piso').value) || 0;
+  const color = document.getElementById('nw-color').value;
+
+  if (!name) { showMsg('alta-msg', 'Escribe el nombre de la persona.', 'ar'); return; }
+  if (!pin || pin.length !== 4) { showMsg('alta-msg', 'El PIN debe ser 4 dígitos (DDMM).', 'ar'); return; }
+  if (!piso) { showMsg('alta-msg', 'Ingresa el sueldo piso.', 'ar'); return; }
+  if (MC_BASE_KEYS.has(name) && !confirm(`"${name}" es usuario base. ¿Sobreescribir en Firestore?`)) return;
+
+  try {
+    await MC_DB.saveExtraUser(name, { pin, salon, rol, color, piso });
+    MC_Users.invalidateCache();
+    await MC_Users.init();
+  } catch(e) {
+    showMsg('alta-msg', 'Error al guardar en la nube. Verifica tu conexión.', 'ar'); return;
+  }
+
+  document.getElementById('nw-name').value  = '';
+  document.getElementById('nw-pin').value   = '';
+  document.getElementById('nw-piso').value  = '';
+  document.getElementById('nw-meta-val').textContent = '—';
+  document.getElementById('nw-gana-val').textContent = '—';
+
+  showMsg('alta-msg', `✅ ${name} dado/a de alta — disponible en todos los dispositivos`, 'ag');
+  renderTeam();
+}
+
+function showMsg(id, txt, cls) {
+  const el = document.getElementById(id);
+  el.className = 'alert ' + cls;
+  el.textContent = txt;
+  el.style.display = 'block';
+  setTimeout(() => { el.style.display = 'none'; }, 3500);
+}
+
+// ── Tabla del equipo ──────────────────────────────────────────
+const ROL_LABELS = { A:'Estilista', B:'Operación', ADMIN:'Admin' };
+const ROL_COLORS = { A:'#7C3AED',   B:'#C9963B',  ADMIN:'#1D9E75' };
+
+function renderTeam() {
+  const inactive = MC_Users._getInactive();
+
+  // Usuarios activos
+  const activeRows = Object.entries(MC_USERS)
+    .sort(([a],[b]) => a.localeCompare(b))
+    .map(([name, u]) => {
+      const isBase = MC_BASE_KEYS.has(name);
+      const meta   = MC_Users.calcMeta(u.piso || 0);
+      const gana   = meta ? Math.round(meta * 0.1) : 0;
+      return { name, u, isBase, meta, gana };
+    });
+
+  document.getElementById('team-tbody').innerHTML = activeRows.map(({ name, u, isBase, meta, gana }) => `
+    <tr id="row-${name}">
+      <td><div class="u-av" style="background:${u.color}">${name[0]}</div></td>
+      <td>
+        <div style="font-weight:500;font-size:12px;color:var(--black)">${name}</div>
+        <div style="font-size:10px;color:var(--gray3)">${MC_UI.salonIcon(u.salon)} ${u.salon}</div>
+        ${isBase ? '<div class="base-tag">base</div>' : ''}
+      </td>
+      <td><span class="rol-badge" style="background:${ROL_COLORS[u.rol]}20;color:${ROL_COLORS[u.rol]}">${ROL_LABELS[u.rol]||u.rol}</span></td>
+      <td style="font-size:12px;color:var(--gray2)">${fmtQ(u.piso)}</td>
+      <td style="font-size:12px;font-weight:600;color:var(--gold)">${fmtQ(meta)}</td>
+      <td style="font-size:12px;color:var(--green)">${fmtQ(gana)}</td>
+      <td><span style="font-size:13px;font-weight:600;letter-spacing:.12em">${u.pin}</span></td>
+      <td style="white-space:nowrap">
+        <button class="act-btn edit" onclick="editRow('${name}',${isBase})">Editar</button>
+      </td>
+    </tr>
+    <tr id="edit-row-${name}" style="display:none;background:#FFFBEF">
+      <td colspan="8" style="padding:.625rem">
+        <div style="display:flex;gap:8px;align-items:flex-end;flex-wrap:wrap">
+          <div>
+            <div class="field-lbl">PIN</div>
+            <input class="t-in pin" id="ep-pin-${name}" type="text" maxlength="4" value="${u.pin}" placeholder="DDMM">
+          </div>
+          ${!isBase ? `
+          <div>
+            <div class="field-lbl">Nuevo nombre</div>
+            <input class="t-in wide" id="ep-rename-${name}" type="text" value="${name}" placeholder="${name}" style="width:100px">
+          </div>
+          <div>
+            <div class="field-lbl">Piso /Q ($)</div>
+            <input class="t-in wide" id="ep-piso-${name}" type="number" value="${u.piso||0}" min="0">
+          </div>
+          <div>
+            <div class="field-lbl">Sucursal</div>
+            <select class="t-in" id="ep-salon-${name}" style="width:110px">
+              <option value="Colima"${u.salon==='Colima'?' selected':''}>Colima</option>
+              <option value="San Pedro"${u.salon==='San Pedro'?' selected':''}>San Pedro</option>
+              <option value="Manzanillo"${u.salon==='Manzanillo'?' selected':''}>Manzanillo</option>
+            </select>
+          </div>` : `<div style="font-size:11px;color:var(--gray3);align-self:center;max-width:180px">Usuario base · piso/sucursal/rol se editan en mc_core.js</div>`}
+          <div style="display:flex;gap:6px;align-items:flex-end">
+            <button class="act-btn save" onclick="saveRow('${name}',${isBase})">Guardar</button>
+            <button class="act-btn del" onclick="deactivateRow('${name}',${isBase})">${isBase ? 'Desactivar' : 'Eliminar'}</button>
+            <button class="act-btn edit" onclick="cancelRow('${name}')">Cancelar</button>
+          </div>
+        </div>
+      </td>
+    </tr>
+  `).join('');
+
+  // Usuarios desactivados (sección al final)
+  const inactiveNames = [...inactive].filter(n => n !== 'Admin');
+  const inactiveWrap = document.getElementById('inactive-section');
+  if (inactiveNames.length) {
+    inactiveWrap.style.display = '';
+    document.getElementById('inactive-list').innerHTML = inactiveNames.map(name => {
+      const isBase = MC_BASE_KEYS.has(name);
+      return `<div style="display:flex;align-items:center;gap:10px;padding:.5rem 0;border-bottom:.5px solid #F5F5F3">
+        <div style="flex:1;font-size:12px;color:var(--gray2)">
+          ${name} ${isBase ? '<span class="base-tag">base</span>' : ''}
+        </div>
+        <button class="act-btn save" onclick="reactivateRow('${name}',${isBase})">Reactivar</button>
+        ${!isBase ? `<button class="act-btn del" onclick="deleteRow('${name}')">Borrar definitivo</button>` : ''}
+      </div>`;
+    }).join('');
+  } else {
+    inactiveWrap.style.display = 'none';
+  }
+}
+
+// ── Inicialización async (Firestore + migración localStorage) ──
+(async () => {
+  await MC_Users.init();
+
+  sess = MC_Session.require();
+  if (!sess || sess.rol !== 'ADMIN') {
+    alert('Esta página es solo para administradores.');
+    window.location.href = 'menu.html';
+    return;
+  }
+
+  // Migración automática: mover usuarios de localStorage → Firestore (solo una vez)
+  await _migrarLocalStorage();
+
+  buildPalette();
+  renderTeam();
+  cargarPremios();
+  cargarAsignacion();
+
+  try {
+    const saved = localStorage.getItem('mc_base_url');
+    if (saved) { document.getElementById('base-url').value = saved; updateLinks(); }
+  } catch(e) {}
+})();
+
+async function _migrarLocalStorage() {
+  try {
+    const localExtras = JSON.parse(localStorage.getItem('mc_extra_users') || '{}');
+    const localOv     = JSON.parse(localStorage.getItem('mc_pin_overrides') || '{}');
+    const localInact  = JSON.parse(localStorage.getItem('mc_inactive_users') || '[]');
+    const hayDatos    = Object.keys(localExtras).length || Object.keys(localOv).length || localInact.length;
+    if (!hayDatos) return;
+
+    let migrados = 0;
+    for (const [name, data] of Object.entries(localExtras)) {
+      if (!MC_USERS[name]) { // no está aún en Firestore
+        await MC_DB.saveExtraUser(name, data);
+        migrados++;
+      }
+    }
+
+    const cfg = await MC_DB.getUserConfig();
+    let cfgUpdated = false;
+    if (Object.keys(localOv).length) {
+      cfg.pin_overrides = { ...(cfg.pin_overrides||{}), ...localOv };
+      cfgUpdated = true;
+    }
+    if (localInact.length) {
+      const s = new Set([...(cfg.inactive||[]), ...localInact]);
+      cfg.inactive = [...s];
+      cfgUpdated = true;
+    }
+    if (cfgUpdated) await MC_DB.saveUserConfig(cfg);
+
+    // Limpiar localStorage tras migración exitosa
+    localStorage.removeItem('mc_extra_users');
+    localStorage.removeItem('mc_pin_overrides');
+    localStorage.removeItem('mc_inactive_users');
+
+    if (migrados || cfgUpdated) {
+      MC_Users.invalidateCache();
+      await MC_Users.init();
+      showMsg('alta-msg', `✅ ${migrados} usuario(s) y configuración migrados a la nube automáticamente.`, 'ag');
+    }
+  } catch(e) {
+    console.warn('Migración localStorage→Firestore falló:', e);
+  }
+}
+
+function editRow(name, isBase) {
+  document.getElementById('edit-row-' + name).style.display = '';
+  document.getElementById('row-' + name).style.background = '#FFFBEF';
+}
+function cancelRow(name) {
+  document.getElementById('edit-row-' + name).style.display = 'none';
+  document.getElementById('row-' + name).style.background = '';
+}
+async function saveRow(name, isBase) {
+  const pin = document.getElementById('ep-pin-' + name)?.value.trim();
+  try {
+    if (pin && pin.length === 4) {
+      await MC_DB.updateUserPin(name, pin, isBase);
+    }
+    if (!isBase) {
+      const newName = document.getElementById('ep-rename-' + name)?.value.trim();
+      const piso    = parseInt(document.getElementById('ep-piso-' + name)?.value) || 0;
+      const salon   = document.getElementById('ep-salon-' + name)?.value;
+      if (newName && newName !== name) {
+        const current = MC_USERS[name] || {};
+        await MC_DB.renameExtraUser(name, newName, {
+          ...current, salon, piso, pin: (pin && pin.length === 4) ? pin : current.pin
+        });
+      } else {
+        const fields = { salon, piso };
+        if (pin && pin.length === 4) fields.pin = pin;
+        await MC_DB.updateExtraUserFields(name, fields);
+      }
+    }
+    MC_Users.invalidateCache();
+    await MC_Users.init();
+  } catch(e) {
+    alert('Error al guardar. Verifica tu conexión.'); return;
+  }
+  renderTeam();
+}
+async function deactivateRow(name, isBase) {
+  const msg = isBase
+    ? `¿Desactivar a "${name}"? Dejará de aparecer en toda la app en todos los dispositivos.`
+    : `¿Eliminar a "${name}"? Pasará a la lista de desactivados.`;
+  if (!confirm(msg)) return;
+  try {
+    await MC_DB.deactivateUser(name, isBase);
+    MC_Users.invalidateCache();
+    await MC_Users.init();
+  } catch(e) { alert('Error al desactivar.'); return; }
+  renderTeam();
+}
+async function reactivateRow(name, isBase) {
+  try {
+    await MC_DB.reactivateUser(name, isBase);
+    MC_Users.invalidateCache();
+    await MC_Users.init();
+  } catch(e) { alert('Error al reactivar.'); return; }
+  renderTeam();
+  showMsg('alta-msg', `✅ ${name} reactivado/a — visible en todos los dispositivos`, 'ag');
+}
+async function deleteRow(name) {
+  if (!confirm(`¿Borrar definitivamente a "${name}"? Esta acción no se puede deshacer.`)) return;
+  try {
+    await MC_DB.deleteExtraUser(name);
+    // Quitar también de la lista de inactivos en el config
+    const cfg = await MC_DB.getUserConfig();
+    cfg.inactive = (cfg.inactive || []).filter(n => n !== name);
+    await MC_DB.saveUserConfig(cfg);
+    MC_Users.invalidateCache();
+    await MC_Users.init();
+  } catch(e) { alert('Error al borrar.'); return; }
+  renderTeam();
+}
+
+// ── Links ─────────────────────────────────────────────────────
+const LINKS = [
+  { icon:'🔗', title:'Enlace principal',              who:'Manda al grupo — todo el equipo',   file:'index.html' },
+  { icon:'✂️', title:'Form Pista A (estilistas)',      who:'Adri · Adai · Karla · Mery · Ale', file:'form_pista_a.html' },
+  { icon:'💛', title:'Nomino a una Compañera',         who:'Todo el equipo',                   file:'form_nominacion.html' },
+  { icon:'⚙️', title:'Form Pista B (operación)',       who:'Edna · Gaby',                      file:'form_pista_b.html' },
+  { icon:'🎯', title:'Panel de resultados',            who:'Edna / operación',                 file:'panel.html' },
+  { icon:'🔐', title:'Configuración (solo Admin)',     who:'Solo tú',                          file:'config.html' },
+];
+
+function updateLinks() {
+  const base = document.getElementById('base-url').value.replace(/\/$/,'').trim();
+  if (!base) {
+    document.getElementById('link-list').innerHTML =
+      '<div style="color:var(--gray3);font-size:12px;text-align:center;padding:.5rem">Ingresa tu URL arriba</div>';
+    return;
+  }
+  document.getElementById('link-list').innerHTML = LINKS.map((l, i) =>
+    `<div class="link-item">
+      <div class="link-icon">${l.icon}</div>
+      <div class="link-info">
+        <div class="link-ttl">${l.title}</div>
+        <div class="link-who">${l.who}</div>
+        <div class="link-url" id="lurl-${i}">${base}/${l.file}</div>
+      </div>
+      <button class="copy-link" id="lcopy-${i}" onclick="copyLink(${i})">Copiar</button>
+    </div>`
+  ).join('');
+  generateWA(base);
+}
+
+function saveUrl() {
+  const url = document.getElementById('base-url').value.trim();
+  if (url) { try { localStorage.setItem('mc_base_url', url); } catch(e){} }
+  updateLinks();
+}
+
+function copyLink(i) {
+  const txt = document.getElementById('lurl-' + i)?.textContent;
+  if (!txt) return;
+  navigator.clipboard.writeText(txt).then(() => {
+    const b = document.getElementById('lcopy-' + i);
+    b.textContent = '✓'; b.classList.add('done');
+    setTimeout(() => { b.textContent = 'Copiar'; b.classList.remove('done'); }, 1800);
+  });
+}
+
+function generateWA(base) {
+  const msg =
+`💛 *MONDOU CHAMPIONS*
+¡El sistema de reconocimiento del equipo ya está activo!
+
+━━━━━━━━━━━━━━━━━━━
+🔗 *TU ACCESO*
+━━━━━━━━━━━━━━━━━━━
+👉 ${base}
+
+Cuando llegue el aviso, entra y llena tus formularios.
+Elige tu nombre → ingresa tu PIN → llena tus formularios.
+
+⏱ Tarda menos de 3 minutos.
+
+━━━━━━━━━━━━━━━━━━━
+📌 *RECUERDA*
+━━━━━━━━━━━━━━━━━━━
+Tu PIN = tu día y mes de cumpleaños (DDMM)
+Ej: 15 de marzo → 1503
+
+Si no llevas el form a tiempo = 0 pts en ese bloque.
+¡Guarda el link en tus favoritos! 🔖
+
+Con cariño,
+Mondou Champions 💛`;
+  document.getElementById('wa-msg').textContent = msg;
+}
+
+function copyWA() {
+  navigator.clipboard.writeText(document.getElementById('wa-msg').textContent).then(() => {
+    const b = document.getElementById('copy-wa');
+    b.textContent = '✓ Copiado'; b.classList.add('done');
+    setTimeout(() => { b.textContent = '⎘ Copiar mensaje'; b.classList.remove('done'); }, 2000);
+  });
+}
+
+// ── Premios — cargar y guardar ────────────────────────────────
+async function cargarPremios() {
+  try {
+    const p = await MC_DB.getPrizes();
+    if (!p) return;
+    if (p.pistaA?.p1?.descripcion) document.getElementById('pz-a1').value = p.pistaA.p1.descripcion;
+    if (p.pistaA?.p2?.descripcion) document.getElementById('pz-a2').value = p.pistaA.p2.descripcion;
+    if (p.pistaA?.p3?.descripcion) document.getElementById('pz-a3').value = p.pistaA.p3.descripcion;
+    if (p.pistaB?.p1?.descripcion) document.getElementById('pz-b1').value = p.pistaB.p1.descripcion;
+    if (p.pistaB?.p2?.descripcion) document.getElementById('pz-b2').value = p.pistaB.p2.descripcion;
+    if (p.nominada?.descripcion)   document.getElementById('pz-nom').value = p.nominada.descripcion;
+    if (p.colectivo?.descripcion)  document.getElementById('pz-col').value = p.colectivo.descripcion;
+    if (p.colectivo?.activo === false) document.getElementById('pz-col-active').checked = false;
+    if (p.targetMemb) document.getElementById('pz-target-memb').value = p.targetMemb;
+  } catch(e) {}
+}
+async function guardarPremios(btn) {
+  const data = {
+    pistaA: {
+      p1: { descripcion: document.getElementById('pz-a1').value.trim() },
+      p2: { descripcion: document.getElementById('pz-a2').value.trim() },
+      p3: { descripcion: document.getElementById('pz-a3').value.trim() }
+    },
+    pistaB: {
+      p1: { descripcion: document.getElementById('pz-b1').value.trim() },
+      p2: { descripcion: document.getElementById('pz-b2').value.trim() }
+    },
+    nominada:  { descripcion: document.getElementById('pz-nom').value.trim() },
+    colectivo: {
+      descripcion: document.getElementById('pz-col').value.trim(),
+      activo: document.getElementById('pz-col-active').checked
+    },
+    targetMemb: parseInt(document.getElementById('pz-target-memb').value) || 0
+  };
+  btn.disabled = true; btn.textContent = 'Guardando...';
+  try {
+    await MC_DB.savePrizes(data);
+    showMsg('prizes-msg', '✅ Premios guardados — el equipo ya puede verlos en la página de Premios', 'ag');
+  } catch(e) {
+    showMsg('prizes-msg', 'Error al guardar. Verifica tu conexión.', 'ar');
+  }
+  btn.disabled = false; btn.textContent = '💾 Guardar premios';
+}
+
+// ── Asignar premios individuales ──────────────────────────────
+async function cargarAsignacion() {
+  const existing = await MC_DB.getAllRewardsThisWeek().catch(()=>[]);
+  const byName = {};
+  existing.forEach(r => { byName[r.name] = r; });
+
+  const team = Object.entries(MC_USERS)
+    .filter(([,u]) => u.rol !== 'ADMIN')
+    .sort(([a],[b]) => a.localeCompare(b));
+
+  document.getElementById('assign-list').innerHTML = team.map(([name, u]) => {
+    const cur = byName[name];
+    return `
+    <div style="display:flex;align-items:flex-start;gap:10px;padding:.625rem 0;border-bottom:.5px solid #F5F5F3">
+      <div class="u-av" style="background:${u.color};flex-shrink:0">${name[0]}</div>
+      <div style="flex:1;min-width:0">
+        <div style="font-size:12px;font-weight:600;color:var(--black);margin-bottom:3px">${name}
+          <span style="font-size:10px;color:var(--gray3);font-weight:400">· ${u.rol==='A'?'Estilista':u.rol==='B'?'Operación':'Admin'}</span>
+        </div>
+        ${cur ? `<div style="font-size:11px;color:var(--green);margin-bottom:4px">✓ Premio asignado: "${cur.descripcion}"</div>` : ''}
+        <input class="field-in" id="rw-${name}" type="text"
+          placeholder="${cur ? 'Actualizar premio...' : 'Escribe el premio para esta persona...'}"
+          value="${cur ? cur.descripcion : ''}"
+          style="font-size:12px;padding:6px 10px">
+      </div>
+      <button class="act-btn save" style="margin-top:18px;flex-shrink:0"
+        onclick="asignarPremio('${name}',this)">
+        ${cur ? 'Actualizar' : 'Asignar'}
+      </button>
+    </div>`;
+  }).join('');
+}
+async function asignarPremio(name, btn) {
+  const desc = document.getElementById('rw-' + name)?.value.trim();
+  if (!desc) { alert('Escribe el premio antes de asignar.'); return; }
+  btn.disabled = true; btn.textContent = '...';
+  try {
+    await MC_DB.saveReward(name, { descripcion: desc, salon: MC_USERS[name]?.salon || '' });
+    showMsg('assign-msg', `✅ Premio asignado a ${name}`, 'ag');
+    await cargarAsignacion();
+  } catch(e) {
+    showMsg('assign-msg', 'Error al guardar. Verifica tu conexión.', 'ar');
+    btn.disabled = false; btn.textContent = 'Asignar';
+  }
+}
+
+</script>
+</body>
+</html>
