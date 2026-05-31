@@ -267,9 +267,20 @@ body{font-family:'DM Sans',sans-serif;background:var(--off);min-height:100vh;pad
   </div>
   <div class="field-row" style="margin-bottom:.375rem">
     <div>
-      <div class="field-lbl">🎯 Meta de membresías quincena (número de membresías)</div>
+      <div class="field-lbl">🎯 Meta de membresías quincena (# unidades — reto colectivo)</div>
       <input class="field-in" id="pz-target-memb" type="number" placeholder="Ej: 30" min="0">
-      <div style="font-size:10px;color:var(--gray3);margin-top:3px">Número de membresías a vender en el período. Aparece en la barra de progreso colectivo.</div>
+      <div style="font-size:10px;color:var(--gray3);margin-top:3px">Número de membresías a vender. Aparece en la barra de progreso colectivo.</div>
+    </div>
+  </div>
+  <div class="field-row" style="margin-bottom:.375rem">
+    <div>
+      <div class="field-lbl">⚡ Meta de valor ponderado Pista B (pts — competencia individual)</div>
+      <input class="field-in" id="pz-target-memb-valor" type="number" placeholder="Ej: 15" min="1">
+      <div style="font-size:10px;color:var(--gray3);margin-top:3px">
+        Puntaje de valor que define el 100% del B1 en Pista B.<br>
+        Escala: Bronce=1 · Silver=2 · Gold=3 · Black=5 · Adam=8.<br>
+        Ejemplo: meta 15 = equivale a vender 3 Gold, o 1 Black + 2 Silver, etc.
+      </div>
     </div>
   </div>
   <div class="bonus-row" style="margin-bottom:.875rem">
@@ -723,7 +734,8 @@ async function cargarPremios() {
     if (p.nominada?.descripcion)   document.getElementById('pz-nom').value = p.nominada.descripcion;
     if (p.colectivo?.descripcion)  document.getElementById('pz-col').value = p.colectivo.descripcion;
     if (p.colectivo?.activo === false) document.getElementById('pz-col-active').checked = false;
-    if (p.targetMemb) document.getElementById('pz-target-memb').value = p.targetMemb;
+    if (p.targetMemb)      document.getElementById('pz-target-memb').value       = p.targetMemb;
+    if (p.targetMembValor) document.getElementById('pz-target-memb-valor').value = p.targetMembValor;
   } catch(e) {}
 }
 async function guardarPremios(btn) {
@@ -742,7 +754,8 @@ async function guardarPremios(btn) {
       descripcion: document.getElementById('pz-col').value.trim(),
       activo: document.getElementById('pz-col-active').checked
     },
-    targetMemb: parseInt(document.getElementById('pz-target-memb').value) || 0
+    targetMemb:      parseInt(document.getElementById('pz-target-memb').value)       || 0,
+    targetMembValor: parseInt(document.getElementById('pz-target-memb-valor').value) || 15
   };
   btn.disabled = true; btn.textContent = 'Guardando...';
   try {

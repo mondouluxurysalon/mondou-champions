@@ -242,13 +242,37 @@ body{font-family:'DM Sans',sans-serif;background:var(--off);min-height:100vh;pad
 
   <div style="height:.5px;background:#F0EDE8;margin:.875rem 0"></div>
 
+  <!-- Membresías Pista B individuales -->
+  <div style="font-size:10px;font-weight:700;color:var(--gray2);text-transform:uppercase;letter-spacing:.08em;margin-bottom:.5rem">
+    ⚙️ Membresías Pista B — individual
+    <span style="font-weight:400;color:var(--gray3);margin-left:6px">Bronce×1 · Silver×2 · Gold×3 · Black×5 · Adam×8</span>
+  </div>
+  <div class="vt-wrap">
+    <table class="vtable">
+      <thead>
+        <tr>
+          <th>Operativo</th>
+          <th>Bron.</th><th>Silv.</th><th>Gold</th><th>Black</th><th>Adam.</th>
+          <th>Valor pts</th>
+        </tr>
+      </thead>
+      <tbody id="ventas-b-tbody"><!-- JS --></tbody>
+    </table>
+  </div>
+
+  <div style="height:.5px;background:#F0EDE8;margin:.875rem 0"></div>
+
   <div class="bonus-row">
-    <span class="bonus-lbl">💳 Total membresías salón (Pista B)</span>
+    <span class="bonus-lbl">💳 Total membresías salón (referencia)</span>
     <input class="bonus-in" type="number" id="inp-memb-total" value="0" min="0" placeholder="0">
   </div>
   <div class="bonus-row">
-    <span class="bonus-lbl">Meta membresías salón / quincena (# membresías)</span>
-    <input class="bonus-in" type="number" id="target-memb" value="30000" min="100">
+    <span class="bonus-lbl">🎯 Meta membresías (# unidades, para premios colectivos)</span>
+    <input class="bonus-in" type="number" id="target-memb" value="30" min="1">
+  </div>
+  <div class="bonus-row">
+    <span class="bonus-lbl">⚡ Meta valor ponderado Pista B (pts — default 15)</span>
+    <input class="bonus-in" type="number" id="target-memb-valor" value="15" min="1" placeholder="Ej: 15">
   </div>
   <button class="gen-btn" onclick="guardarVentas(this)" style="margin-top:.5rem">💾 Guardar datos de ventas</button>
 </div>
@@ -305,8 +329,11 @@ let salesMembs       = {};   // membresías vendidas (conteo por tipo) por estil
 let salesMembTotal   = 0;    // total membresías salón (para Pista B)
 let salesTargetMemb  = 30000;
 
-const MEMB_TYPES = ['bronce','silver','gold','black','adam'];
-const MEMB_LABEL = {bronce:'Bron.',silver:'Silv.',gold:'Gold',black:'Black',adam:'Adam.'};
+const MEMB_TYPES  = ['bronce','silver','gold','black','adam'];
+const MEMB_LABEL  = {bronce:'Bron.',silver:'Silv.',gold:'Gold',black:'Black',adam:'Adam.'};
+const MEMB_WEIGHTS = {bronce:1, silver:2, gold:3, black:5, adam:8};  // valor ponderado por tipo
+
+let salesTargetMembValor = 15;  // meta de valor ponderado para Pista B (configurable)
 
 // ── Tabla editable de ventas por estilista ────────────────────
 function buildVentasTable() {
@@ -344,6 +371,38 @@ function buildBonusSection() {
       <input class="bonus-in" type="number" id="bonus-${u.name}" min="0" max="50" value="0" placeholder="0–50">
     </div>`
   ).join('');
+}
+
+// ── Tabla de membresías individuales Pista B ──────────────────
+function buildVentasBTable() {
+  document.getElementById('ventas-b-tbody').innerHTML = getTeamB().map(u => {
+    const m   = salesMembs[u.name] || {};
+    const val = membValueFor(u.name);
+    return `<tr>
+      <td>
+        <div style="display:flex;align-items:center;gap:5px">
+          <span style="width:20px;height:20px;border-radius:50%;background:${u.color};color:#fff;font-size:10px;font-weight:700;display:inline-flex;align-items:center;justify-content:center;flex-shrink:0">${u.name[0]}</span>
+          <strong style="font-size:12px">${u.name}</strong>
+        </div>
+      </td>
+      ${MEMB_TYPES.map(t=>`<td><input type="number" class="vt-in narrow" id="vtb-m-${t}-${u.name}" value="${m[t]||0}" min="0" oninput="reCalcBRow('${u.name}')"></td>`).join('')}
+      <td id="vtb-val-${u.name}" style="font-weight:700;font-size:12px;color:var(--gold)">${val} pts</td>
+    </tr>`;
+  }).join('');
+}
+
+function reCalcBRow(name) {
+  const m = {};
+  MEMB_TYPES.forEach(t => { m[t] = parseInt(document.getElementById(`vtb-m-${t}-${name}`)?.value) || 0; });
+  const val = MEMB_TYPES.reduce((s,t) => s + m[t] * MEMB_WEIGHTS[t], 0);
+  const el  = document.getElementById(`vtb-val-${name}`);
+  if (el) el.textContent = val + ' pts';
+}
+
+// ── Valor ponderado de membresías de una persona ──────────────
+function membValueFor(name) {
+  const m = salesMembs[name] || {};
+  return MEMB_TYPES.reduce((sum, t) => sum + (m[t]||0) * MEMB_WEIGHTS[t], 0);
 }
 
 function reCalcRow(name) {
@@ -431,28 +490,35 @@ async function init() {
     ]);
     [respA, respB, noms] = [rA, rB, ns];
 
-    // Pre-poblar meta de membresías desde config de premios (configurada en config.html)
+    // Pre-poblar metas desde prizes (configuradas en config.html)
     if (prizes?.targetMemb) {
       salesTargetMemb = prizes.targetMemb;
       document.getElementById('target-memb').value = prizes.targetMemb;
     }
+    if (prizes?.targetMembValor) {
+      salesTargetMembValor = prizes.targetMembValor;
+      document.getElementById('target-memb-valor').value = prizes.targetMembValor;
+    }
 
     // Construir secciones dinámicas ahora que TEAM está poblado
     buildVentasTable();
+    buildVentasBTable();
     buildBonusSection();
 
     if (sv) {
-      // Compatibilidad con estructura anterior (commissions → serviceRevenue)
-      salesServiceRev  = sv.serviceRevenue || sv.commissions || {};
-      salesProductRev  = sv.productRevenue || {};
-      salesMembs       = sv.membs          || {};
-      salesMembTotal   = sv.membTotal      || 0;
-      salesTargetMemb  = sv.targetMemb     || prizes?.targetMemb || 30000;
-      salesLoaded      = true;
+      salesServiceRev      = sv.serviceRevenue || sv.commissions || {};
+      salesProductRev      = sv.productRevenue || {};
+      salesMembs           = sv.membs          || {};
+      salesMembTotal       = sv.membTotal      || 0;
+      salesTargetMemb      = sv.targetMemb     || prizes?.targetMemb     || 30;
+      salesTargetMembValor = sv.targetMembValor|| prizes?.targetMembValor|| 15;
+      salesLoaded          = true;
 
-      document.getElementById('target-memb').value    = salesTargetMemb;
-      document.getElementById('inp-memb-total').value = salesMembTotal;
+      document.getElementById('target-memb').value       = salesTargetMemb;
+      document.getElementById('target-memb-valor').value = salesTargetMembValor;
+      document.getElementById('inp-memb-total').value    = salesMembTotal;
 
+      // Poblar inputs Pista A
       getTeamA().forEach(u => {
         const srvEl = document.getElementById(`vt-srv-${u.name}`);
         const prdEl = document.getElementById(`vt-prd-${u.name}`);
@@ -464,6 +530,16 @@ async function init() {
           if (el) el.value = m[t] || 0;
         });
         reCalcRow(u.name);
+      });
+
+      // Poblar inputs Pista B
+      getTeamB().forEach(u => {
+        const m = salesMembs[u.name] || {};
+        MEMB_TYPES.forEach(t => {
+          const el = document.getElementById(`vtb-m-${t}-${u.name}`);
+          if (el) el.value = m[t] || 0;
+        });
+        reCalcBRow(u.name);
       });
 
       const al = document.getElementById('sales-alert');
@@ -592,6 +668,8 @@ async function generarTablaRef() {
 // ── Guardar datos de ventas a Firestore ───────────────────────
 async function guardarVentas(btn) {
   const serviceRevenue = {}, productRevenue = {}, membs = {};
+
+  // Pista A: servicios, productos y membresías
   getTeamA().forEach(u => {
     serviceRevenue[u.name] = Math.max(0, parseInt(document.getElementById(`vt-srv-${u.name}`)?.value) || 0);
     productRevenue[u.name] = Math.max(0, parseInt(document.getElementById(`vt-prd-${u.name}`)?.value) || 0);
@@ -600,17 +678,30 @@ async function guardarVentas(btn) {
       membs[u.name][t] = Math.max(0, parseInt(document.getElementById(`vt-m-${t}-${u.name}`)?.value) || 0);
     });
   });
-  const membTotal     = Math.max(0, parseInt(document.getElementById('inp-memb-total').value) || 0);
-  salesTargetMemb     = Math.max(1, parseInt(document.getElementById('target-memb').value) || 30000);
+
+  // Pista B: membresías individuales ponderadas
+  getTeamB().forEach(u => {
+    membs[u.name] = {};
+    MEMB_TYPES.forEach(t => {
+      membs[u.name][t] = Math.max(0, parseInt(document.getElementById(`vtb-m-${t}-${u.name}`)?.value) || 0);
+    });
+  });
+
+  const membTotal          = Math.max(0, parseInt(document.getElementById('inp-memb-total').value) || 0);
+  salesTargetMemb          = Math.max(1, parseInt(document.getElementById('target-memb').value) || 30);
+  salesTargetMembValor     = Math.max(1, parseInt(document.getElementById('target-memb-valor').value) || 15);
 
   btn.disabled = true; btn.textContent = 'Guardando...';
   try {
-    await MC_DB.saveSales({ serviceRevenue, productRevenue, membs, membTotal, targetMemb: salesTargetMemb });
-    salesServiceRev = serviceRevenue;
-    salesProductRev = productRevenue;
-    salesMembs      = membs;
-    salesMembTotal  = membTotal;
-    salesLoaded     = true;
+    await MC_DB.saveSales({
+      serviceRevenue, productRevenue, membs, membTotal,
+      targetMemb: salesTargetMemb, targetMembValor: salesTargetMembValor
+    });
+    salesServiceRev  = serviceRevenue;
+    salesProductRev  = productRevenue;
+    salesMembs       = membs;
+    salesMembTotal   = membTotal;
+    salesLoaded      = true;
     const al = document.getElementById('sales-alert');
     al.className   = 'alert ag';
     al.textContent = '✅ Datos de ventas guardados correctamente';
@@ -620,7 +711,7 @@ async function guardarVentas(btn) {
   btn.disabled = false; btn.textContent = '💾 Guardar datos de ventas';
 }
 
-// ── Puntos de ticket (B1) — usa meta calculada desde piso ─────
+// ── Puntos de ticket (B1) ─────────────────────────────────────
 function ticketPts(name, rol) {
   if (!salesLoaded) return rol === 'A' ? 180 : 200;
   if (rol === 'A') {
@@ -631,11 +722,14 @@ function ticketPts(name, rol) {
     const meta  = Math.max(1, MC_Users.calcMeta(piso));
     return Math.min(Math.round((total / meta) * 300), 330);
   }
-  // Pista B: membresías totales vs meta del salón
-  return Math.min(Math.round((salesMembTotal / salesTargetMemb) * 300), 330);
+  // Pista B: valor ponderado INDIVIDUAL de membresías vs meta de valor
+  const val = membValueFor(name);
+  return Math.min(Math.round((val / Math.max(1, salesTargetMembValor)) * 300), 330);
 }
 
 // ── Calcular puntos completos con desglose ───────────────────
+// Pesos Pista A: B1 60%  · B2 25% · B3 15%
+// Pesos Pista B: B1 45%  · B2 25% · B3 30%  (más peso a equipo/nominaciones)
 function scoreDetail(name, rol) {
   const nomCount = noms.filter(n => n.nominee === name).length;
   const hasForms = rol === 'A' ? !!respA[name] : !!respB[name];
@@ -646,13 +740,13 @@ function scoreDetail(name, rol) {
     const r = respA[name] || {};
     b2      = Math.round(((r.q1||0)/3)*75 + ((r.q2||0)/5)*100 + ((r.q3||0)/4)*75);
     b3used  = rawB3;
-    total   = Math.round(b1*0.6 + b2*0.25 + b3used*0.15);
+    total   = Math.round(b1*0.60 + b2*0.25 + b3used*0.15);
   } else {
     const r = respB[name] || {};
     const bonus = parseInt(document.getElementById(`bonus-${name}`)?.value) || 0;
     b2      = Math.round(((r.q1||0)/3)*75 + ((r.q2||0)/5)*100 + ((r.q3||0)/4)*75 + ((r.q4||0)/4)*50);
     b3used  = Math.min(rawB3 + bonus, 200);
-    total   = Math.round(b1*0.5 + b2*0.3 + b3used*0.2);
+    total   = Math.round(b1*0.45 + b2*0.25 + b3used*0.30);
   }
   return { b1, b2, b3: rawB3, total };
 }
@@ -663,8 +757,12 @@ function score(name, rol) { return scoreDetail(name, rol).total; }
 function generate() {
   const details = {};
   TEAM.forEach(u => { details[u.name] = scoreDetail(u.name, u.rol); });
-  const rankA  = getTeamA().map(u=>({name:u.name,color:u.color,...details[u.name]})).sort((a,b)=>b.total-a.total);
-  const rankB  = getTeamB().map(u=>({name:u.name,color:u.color,...details[u.name]})).sort((a,b)=>b.total-a.total);
+  const nomCount = (name) => noms.filter(n => n.nominee === name).length;
+  const byScore  = (a, b) => b.total !== a.total
+    ? b.total - a.total
+    : nomCount(b.name) - nomCount(a.name);  // tiebreaker: más nominaciones gana
+  const rankA = getTeamA().map(u=>({name:u.name,color:u.color,...details[u.name]})).sort(byScore);
+  const rankB = getTeamB().map(u=>({name:u.name,color:u.color,...details[u.name]})).sort(byScore);
   const maxPts = Math.max(...Object.values(details).map(d=>d.total), 1);
   const nomTally = Object.entries(
     noms.reduce((acc,n)=>{ acc[n.nominee]=(acc[n.nominee]||0)+1; return acc; },{})
