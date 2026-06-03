@@ -140,7 +140,7 @@ textarea::placeholder{color:var(--gray3)}
   <div class="sec-num">1</div>
   <div>
     <div class="sec-ttl">¿A quién reconoces esta semana?</div>
-    <div class="sec-sub">Solo del equipo de tu sucursal · Diferente cada semana</div>
+    <div class="sec-sub">De todo el equipo Mondou · Cualquier sucursal</div>
   </div>
 </div>
 <div class="card anim" style="animation-delay:.08s">
@@ -247,16 +247,16 @@ let reason   = null;
   dot.style.background = sess.color;
   document.getElementById('uc-name').textContent = sess.name;
 
-  const noms = MC_UI.nominees(sess.name, sess.salon);
+  const noms = MC_UI.nominees(sess.name);
   const ROLES = { A:'Estilista', B:'Operación', ADMIN:'Admin' };
   document.getElementById('team-grid').innerHTML = noms.length
     ? noms.map(p =>
         `<div class="tm" onclick="pickNominee('${p.name}','${p.color}')" id="tm-${p.name}">
           <div class="tm-av" style="background:${p.color}">${p.name[0]}</div>
           <div class="tm-name">${p.name}</div>
-          <div class="tm-role">${ROLES[p.rol] || p.rol}</div>
+          <div class="tm-role">${ROLES[p.rol] || p.rol} · ${p.salon}</div>
         </div>`).join('')
-    : '<p style="color:var(--gray3);font-size:12px;text-align:center;padding:.5rem">No hay compañeras disponibles en tu sucursal.</p>';
+    : '<p style="color:var(--gray3);font-size:12px;text-align:center;padding:.5rem">No hay compañeras disponibles.</p>';
 })();
 
 // ── Funciones globales ────────────────────────────────────────
