@@ -383,10 +383,11 @@ const MC_UI = {
   isSaturday() { return new Date().getDay() === 6; },
 
   // Compañeros nominables: mismo salón, diferente nombre
-  nominees(myName, mySalon) {
+  nominees(myName) {
+    // Nominaciones all-vs-all: cualquier compañera sin importar sucursal
     return Object.entries(MC_USERS)
-      .filter(([n, u]) => n !== myName && u.salon === mySalon && u.rol !== 'ADMIN')
-      .map(([n, u]) => ({ name: n, color: u.color, rol: u.rol }));
+      .filter(([n, u]) => n !== myName && u.rol !== 'ADMIN')
+      .map(([n, u]) => ({ name: n, color: u.color, rol: u.rol, salon: u.salon }));
   },
 
   // Usuarios del mismo salón para mostrar en panel
