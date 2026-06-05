@@ -111,6 +111,32 @@ body{font-family:'DM Sans',sans-serif;background:var(--off);min-height:100vh;pad
 /* ACTIONS */
 .gen-btn{width:100%;background:var(--gold);color:var(--black);border:none;border-radius:12px;padding:.875rem;font-size:13px;font-weight:700;font-family:'DM Sans',sans-serif;cursor:pointer;margin-bottom:.5rem;transition:all .18s}
 .gen-btn:active{transform:scale(.98)}
+
+/* IMPORTAR TBHS */
+.tbhs-drop{border:1.5px dashed #D0CBC0;border-radius:12px;padding:1.5rem 1rem;text-align:center;cursor:pointer;transition:all .2s;background:var(--off)}
+.tbhs-drop:hover,.tbhs-drop.drag-over{border-color:var(--gold);background:var(--gold-pale)}
+.tbhs-drop-icon{font-size:28px;margin-bottom:.5rem}
+.tbhs-drop-title{font-size:13px;font-weight:600;color:var(--black);margin-bottom:.25rem}
+.tbhs-drop-sub{font-size:11px;color:var(--gray3);margin-bottom:.75rem}
+.tbhs-file-list{display:flex;flex-wrap:wrap;gap:6px;justify-content:center;margin:.75rem 0;min-height:24px}
+.tbhs-file-chip{font-size:10px;background:#E8F5E9;color:#1B5E20;border-radius:20px;padding:3px 10px;border:.5px solid #A5D6A7}
+.tbhs-file-chip.bad{background:#FFEBEE;color:#B71C1C;border-color:#EF9A9A}
+.tbhs-preview{margin-top:1rem;display:none}
+.tbhs-preview-table{width:100%;border-collapse:collapse;font-size:11px}
+.tbhs-preview-table th{padding:5px 6px;font-size:9px;font-weight:700;color:var(--gray3);text-transform:uppercase;letter-spacing:.04em;border-bottom:.5px solid #eee;background:var(--off);text-align:center}
+.tbhs-preview-table th:first-child{text-align:left}
+.tbhs-preview-table td{padding:5px 6px;border-bottom:.5px solid #F8F8F6;vertical-align:middle;text-align:center;font-size:11.5px}
+.tbhs-preview-table td:first-child{text-align:left}
+.tbhs-excl-row{background:#FFF8F8}
+.tbhs-excl-row td{color:#E24B4A;text-decoration:line-through;font-size:10.5px}
+.tbhs-tag{display:inline-block;font-size:9px;border-radius:4px;padding:2px 7px;font-weight:600;margin-left:4px}
+.tbhs-tag-excl{background:#FCEBEB;color:var(--red)}
+.tbhs-tag-warn{background:var(--amber-l);color:#92400E}
+.tbhs-tag-ok{background:var(--green-l);color:#065F46}
+.tbhs-unmatched-box{background:var(--amber-l);border-left:2px solid var(--amber);border-radius:8px;padding:.75rem;margin-bottom:.5rem;font-size:12px;color:#633806}
+.tbhs-match-row{display:flex;align-items:center;gap:8px;margin-top:.375rem}
+.tbhs-match-sel{flex:1;font-size:11px;padding:4px 8px;border:.5px solid #D0CBC0;border-radius:6px;background:#fff;color:var(--black)}
+.tbhs-section-title{font-size:10px;font-weight:700;color:var(--gray2);text-transform:uppercase;letter-spacing:.06em;margin:.75rem 0 .375rem}
 .copy-btn{width:100%;background:var(--white);color:var(--gray2);border:.5px solid #E8E6E0;border-radius:12px;padding:.75rem;font-size:13px;font-weight:500;font-family:'DM Sans',sans-serif;cursor:pointer;margin-bottom:.5rem}
 .copy-btn.done{background:var(--green-l);color:var(--green);border-color:var(--green)}
 .wa-preview{background:#f0f0f0;border-radius:10px;padding:1rem;font-size:12px;line-height:1.85;white-space:pre-wrap;display:none;margin-bottom:.5rem;border:.5px solid #ddd}
@@ -173,6 +199,58 @@ body{font-family:'DM Sans',sans-serif;background:var(--off);min-height:100vh;pad
 
 <!-- VENTAS -->
 <div class="sec anim" style="animation-delay:.18s">📊 Ventas · Datos del período</div>
+
+<!-- Tarjeta 0: Importar TBHS (7 archivos) -->
+<div class="card anim" style="animation-delay:.181s">
+  <div style="font-size:10px;font-weight:700;color:var(--gray2);text-transform:uppercase;letter-spacing:.08em;margin-bottom:.625rem">⬆️ Importar desde TBHS — 7 archivos</div>
+
+  <div class="tbhs-drop" id="tbhs-drop"
+    ondragover="event.preventDefault();this.classList.add('drag-over')"
+    ondragleave="this.classList.remove('drag-over')"
+    ondrop="event.preventDefault();this.classList.remove('drag-over');handleTBHSDrop(event.dataTransfer.files)">
+    <div class="tbhs-drop-icon">📂</div>
+    <div class="tbhs-drop-title">Arrastra aquí los 7 archivos CSV</div>
+    <div class="tbhs-drop-sub">Servicios Colima · Servicios San Pedro · Servicios Manzanillo<br>Productos Colima · Productos San Pedro · Productos Manzanillo · Membresías</div>
+    <div class="tbhs-file-list" id="tbhs-file-list"></div>
+    <input type="file" id="tbhs-input" multiple accept=".csv" style="display:none" onchange="handleTBHSDrop(this.files)">
+    <button class="gen-btn" style="width:auto;padding:.5rem 1.5rem;font-size:12px;margin:0" onclick="document.getElementById('tbhs-input').click()">Seleccionar archivos</button>
+  </div>
+
+  <!-- PREVIEW: aparece tras procesar -->
+  <div class="tbhs-preview" id="tbhs-preview">
+    <div id="tbhs-unmatched-area"></div>
+
+    <div class="tbhs-section-title">✅ Resumen filtrado por persona</div>
+    <div style="overflow-x:auto">
+      <table class="tbhs-preview-table" id="tbhs-summary-table">
+        <thead>
+          <tr>
+            <th>Persona</th>
+            <th>Servicios $</th>
+            <th>Productos $</th>
+            <th>Bron.</th><th>Silv.</th><th>Gold</th><th>Black</th><th>Adam.</th>
+            <th>Valor pts</th>
+          </tr>
+        </thead>
+        <tbody id="tbhs-summary-body"></tbody>
+      </table>
+    </div>
+
+    <details style="margin-top:.75rem">
+      <summary style="font-size:10px;color:var(--red);cursor:pointer;font-weight:600;letter-spacing:.04em;text-transform:uppercase">
+        🚫 Filas excluidas (membresías / monedero)
+      </summary>
+      <div id="tbhs-excluded-list" style="margin-top:.5rem"></div>
+    </details>
+
+    <div id="tbhs-apply-area" style="margin-top:1rem">
+      <button class="gen-btn" onclick="applyTBHSData()" style="background:var(--green);color:#fff">
+        ✅ Aplicar datos a tabla de ventas
+      </button>
+    </div>
+    <div id="tbhs-apply-msg" class="alert" style="display:none"></div>
+  </div>
+</div>
 
 <!-- Tarjeta 1: Referencia TBHS (3 CSVs) -->
 <div class="card anim" style="animation-delay:.183s">
@@ -864,6 +942,275 @@ function copyWA() {
     b.textContent = '✓ Copiado'; b.classList.add('done');
     setTimeout(() => { b.textContent = '⎘ Copiar mensaje WhatsApp'; b.classList.remove('done'); }, 2200);
   });
+}
+
+// ══════════════════════════════════════════════════════════════
+// IMPORTAR DESDE TBHS — 7 archivos, filtrado automático
+// ══════════════════════════════════════════════════════════════
+
+// Palabras clave para excluir de servicios/productos
+const TBHS_EXCL = ['membres','membresia','membresía','recarga','abono'];
+
+function tbhsExclude(producto) {
+  const p = String(producto).toLowerCase();
+  return TBHS_EXCL.some(kw => p.includes(kw));
+}
+
+// Normaliza texto: lowercase, sin espacios extra
+function norm(s) { return String(s||'').trim().toLowerCase().replace(/\s+/g,' '); }
+
+// Apodos conocidos de TBHS → nombre en MC_USERS
+const TBHS_ALIASES = {
+  'adriana': 'Adri',
+  'alejandra': 'Ale',
+  'meri': 'Mery',
+};
+
+// Caché de matches ya resueltos (incluyendo asignaciones manuales del admin)
+const TBHS_MATCH_CACHE = {};
+
+function matchTBHSName(tbhsName) {
+  const key = norm(tbhsName);
+  if (!key || key.includes('centro de mando')) return null;
+  if (TBHS_MATCH_CACHE[key] !== undefined) return TBHS_MATCH_CACHE[key];
+
+  const mcNames = Object.keys(MC_USERS).filter(n => MC_USERS[n].rol !== 'ADMIN');
+
+  // 1. MC name contained in TBHS name (e.g. "Yareh Medina" in "Yareh Medina  ")
+  for (const mc of mcNames) {
+    const mcn = norm(mc);
+    if (key.includes(mcn) || mcn.includes(key)) return (TBHS_MATCH_CACHE[key] = mc);
+  }
+
+  // 2. First word match
+  const first = key.split(' ')[0];
+  for (const mc of mcNames) {
+    if (norm(mc).split(' ')[0] === first) return (TBHS_MATCH_CACHE[key] = mc);
+  }
+
+  // 3. Nickname map
+  if (TBHS_ALIASES[first] && MC_USERS[TBHS_ALIASES[first]])
+    return (TBHS_MATCH_CACHE[key] = TBHS_ALIASES[first]);
+
+  return (TBHS_MATCH_CACHE[key] = null);
+}
+
+// Mapa de nombre de membresía TBHS → tipo interno
+const MEMB_PRODUCT_MAP = {
+  bronce:'bronce', bronze:'bronce',
+  silver:'silver', plata:'silver',
+  gold:'gold', oro:'gold',
+  black:'black',
+  adam:'adam', adamantium:'adam', platinum:'adam'
+};
+
+let tbhsData = null;   // resultado procesado
+
+// ── Leer y clasificar archivos ────────────────────────────────
+async function handleTBHSDrop(files) {
+  const list = Array.from(files);
+  const chipsEl = document.getElementById('tbhs-file-list');
+  chipsEl.innerHTML = list.map(f => `<span class="tbhs-file-chip">${f.name}</span>`).join('');
+
+  const raw = { servicios: [], productos: [], membresias: [] };
+
+  for (const file of list) {
+    const fn = norm(file.name);
+    const text = await readFile(file);
+    if (fn.includes('membres') || fn.includes('membresias')) {
+      raw.membresias.push(...parseMembresíasCSV(text));
+    } else if (fn.includes('servicio')) {
+      const { inc, exc } = parseSrvPrdCSV(text);
+      raw.servicios.push(...inc, ...exc);
+    } else if (fn.includes('producto')) {
+      const { inc, exc } = parseSrvPrdCSV(text);
+      raw.productos.push(...inc, ...exc);
+    }
+  }
+
+  tbhsData = raw;
+  renderTBHSPreview(raw);
+}
+
+// ── Parser: servicios y productos ────────────────────────────
+function parseSrvPrdCSV(text) {
+  const rows = parseCSV(text).filter(r => r.Colaborador && r.Colaborador.trim() && r.Fecha);
+  const inc = [], exc = [];
+  for (const r of rows) {
+    const prod   = r.Producto || '';
+    const total  = parsePesos(r.Total);
+    const collab = r.Colaborador.trim();
+    const mc     = matchTBHSName(collab);
+    const entry  = { collab, prod, total, mc };
+    if (tbhsExclude(prod)) exc.push({ ...entry, _excl: true });
+    else                    inc.push({ ...entry, _excl: false });
+  }
+  return { inc, exc };
+}
+
+// ── Parser: membresías ────────────────────────────────────────
+function parseMembresíasCSV(text) {
+  return parseCSV(text)
+    .filter(r => r.ID && r.Product)
+    .map(r => ({
+      agent:    (r.Agent || '').trim(),
+      product:  (r.Product || '').trim(),
+      amount:   parsePesos(r.Amount),
+      mc:       matchTBHSName(r.Agent || ''),
+      membType: MEMB_PRODUCT_MAP[norm(r.Product)] || null
+    }));
+}
+
+// ── Agregar por persona ───────────────────────────────────────
+function aggregateTBHS(raw, overrides = {}) {
+  // overrides: { 'tbhs name' : 'mc name' } desde selects del admin
+  const all = [...getTeamA(), ...getTeamB()].map(u => u.name);
+  const aggr = {};
+  all.forEach(n => { aggr[n] = { srv: 0, prd: 0, membs: {bronce:0,silver:0,gold:0,black:0,adam:0} }; });
+
+  const resolve = (tbhsName) => overrides[norm(tbhsName)] || matchTBHSName(tbhsName);
+
+  raw.servicios.filter(r => !r._excl).forEach(r => {
+    const mc = resolve(r.collab);
+    if (mc && aggr[mc]) aggr[mc].srv += r.total;
+  });
+  raw.productos.filter(r => !r._excl).forEach(r => {
+    const mc = resolve(r.collab);
+    if (mc && aggr[mc]) aggr[mc].prd += r.total;
+  });
+  raw.membresias.filter(r => r.membType).forEach(r => {
+    const mc = resolve(r.agent);
+    if (mc && aggr[mc] && r.membType) aggr[mc].membs[r.membType]++;
+  });
+
+  return aggr;
+}
+
+// ── Render preview ────────────────────────────────────────────
+function renderTBHSPreview(raw) {
+  // Collect unmatched names
+  const unmatchedSet = new Set();
+  [...raw.servicios, ...raw.productos].filter(r => !r._excl && !r.mc)
+    .forEach(r => unmatchedSet.add(r.collab));
+  raw.membresias.filter(r => !r.mc).forEach(r => { if (r.agent) unmatchedSet.add(r.agent); });
+
+  // Unmatched area
+  const unmArea = document.getElementById('tbhs-unmatched-area');
+  if (unmatchedSet.size) {
+    const mcOptions = Object.keys(MC_USERS).filter(n => MC_USERS[n].rol !== 'ADMIN')
+      .map(n => `<option value="${n}">${n}</option>`).join('');
+    unmArea.innerHTML = `
+      <div class="tbhs-unmatched-box">
+        ⚠️ <strong>${unmatchedSet.size} nombre(s) no reconocido(s)</strong> — asígnalos manualmente:
+        ${[...unmatchedSet].map(name => `
+          <div class="tbhs-match-row">
+            <span style="flex:1;font-size:11px">${name}</span>
+            <select class="tbhs-match-sel" id="um-${norm(name).replace(/\s/g,'-')}"
+              onchange="tbhsReaggregate()">
+              <option value="">— ignorar —</option>
+              ${mcOptions}
+            </select>
+          </div>`).join('')}
+      </div>`;
+  } else {
+    unmArea.innerHTML = '';
+  }
+
+  tbhsReaggregate();
+  document.getElementById('tbhs-preview').style.display = 'block';
+}
+
+function tbhsReaggregate() {
+  if (!tbhsData) return;
+
+  // Collect manual overrides from selects
+  const overrides = {};
+  document.querySelectorAll('.tbhs-match-sel').forEach(sel => {
+    if (sel.value) {
+      // Find the original name from the select id
+      const key = sel.id.replace('um-','').replace(/-/g,' ');
+      overrides[key] = sel.value;
+    }
+  });
+
+  const aggr = aggregateTBHS(tbhsData, overrides);
+
+  // Summary table
+  const allUsers = [...getTeamA(), ...getTeamB()];
+  const tbody = document.getElementById('tbhs-summary-body');
+  tbody.innerHTML = allUsers.map(u => {
+    const d = aggr[u.name];
+    const val = MEMB_TYPES.reduce((s,t) => s + d.membs[t]*MEMB_WEIGHTS[t], 0);
+    const membRow = MEMB_TYPES.map(t => `<td>${d.membs[t]||'—'}</td>`).join('');
+    return `<tr>
+      <td><span style="display:inline-flex;align-items:center;gap:5px">
+        <span style="width:12px;height:12px;border-radius:50%;background:${u.color};display:inline-block;flex-shrink:0"></span>
+        <strong>${u.name}</strong>
+        <span style="font-size:9px;color:var(--gray3)">${u.salon}</span>
+      </span></td>
+      <td>${d.srv ? '$'+Math.round(d.srv).toLocaleString('es-MX') : '—'}</td>
+      <td>${d.prd ? '$'+Math.round(d.prd).toLocaleString('es-MX') : '—'}</td>
+      ${membRow}
+      <td style="font-weight:700;color:${val>0?'var(--gold)':'var(--gray3)'}">${val||'—'}</td>
+    </tr>`;
+  }).join('');
+
+  // Excluded list
+  const excl = [...tbhsData.servicios.filter(r=>r._excl), ...tbhsData.productos.filter(r=>r._excl)];
+  document.getElementById('tbhs-excluded-list').innerHTML = excl.length
+    ? `<table class="tbhs-preview-table"><tbody>${excl.map(r=>`
+        <tr class="tbhs-excl-row">
+          <td>${r.collab}</td>
+          <td style="text-align:left">${r.prod}</td>
+          <td>$${Math.round(r.total).toLocaleString('es-MX')}</td>
+          <td><span class="tbhs-tag tbhs-tag-excl">excluido</span></td>
+        </tr>`).join('')}</tbody></table>`
+    : '<p style="font-size:11px;color:var(--gray3)">Sin filas excluidas.</p>';
+
+  // Store for apply
+  document.getElementById('tbhs-apply-area')._aggr = aggr;
+  document.getElementById('tbhs-apply-area')._membTotal =
+    tbhsData.membresias.filter(r=>r.membType).length;
+}
+
+// ── Aplicar a la tabla de ventas ──────────────────────────────
+function applyTBHSData() {
+  const area  = document.getElementById('tbhs-apply-area');
+  const aggr  = area._aggr;
+  const membTotal = area._membTotal || 0;
+  if (!aggr) return;
+
+  getTeamA().forEach(u => {
+    const d = aggr[u.name] || { srv:0, prd:0, membs:{} };
+    const sEl = document.getElementById(`vt-srv-${u.name}`);
+    const pEl = document.getElementById(`vt-prd-${u.name}`);
+    if (sEl) sEl.value = Math.round(d.srv);
+    if (pEl) pEl.value = Math.round(d.prd);
+    MEMB_TYPES.forEach(t => {
+      const el = document.getElementById(`vt-m-${t}-${u.name}`);
+      if (el) el.value = d.membs[t] || 0;
+    });
+    reCalcRow(u.name);
+  });
+
+  getTeamB().forEach(u => {
+    const d = aggr[u.name] || { membs:{} };
+    MEMB_TYPES.forEach(t => {
+      const el = document.getElementById(`vtb-m-${t}-${u.name}`);
+      if (el) el.value = d.membs[t] || 0;
+    });
+    reCalcBRow(u.name);
+  });
+
+  const mtEl = document.getElementById('inp-memb-total');
+  if (mtEl) mtEl.value = membTotal;
+  salesLoaded = false;  // forzar re-guardado
+
+  const msg = document.getElementById('tbhs-apply-msg');
+  msg.className = 'alert ag';
+  msg.style.display = 'block';
+  msg.textContent = '✅ Datos aplicados — revisa la tabla, ajusta si es necesario y pulsa "Guardar datos de ventas"';
+  setTimeout(() => { msg.style.display = 'none'; }, 5000);
 }
 </script>
 </body>
