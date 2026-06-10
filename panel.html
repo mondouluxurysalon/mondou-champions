@@ -158,8 +158,18 @@ body{font-family:'DM Sans',sans-serif;background:var(--off);min-height:100vh;pad
 
 <div class="body">
 
+<!-- PERIODO -->
+<div class="sec anim">🗓️ Periodo</div>
+<div class="card anim" style="animation-delay:.03s">
+  <div class="bonus-row" style="margin-bottom:0">
+    <span class="bonus-lbl">Semana a revisar / generar</span>
+    <select id="period-select" style="flex:1.4;font-size:12px;padding:6px 8px;border:.5px solid #E8E6E0;border-radius:8px;background:var(--off);max-width:230px" onchange="onPeriodChange()"></select>
+  </div>
+  <div style="font-size:10.5px;color:var(--gray3);margin-top:.5rem">Si una semana ya pasó y sigue mostrando datos, elígela aquí — los datos no se pierden, solo hay que seleccionar la semana correcta.</div>
+</div>
+
 <!-- PARTICIPACIÓN -->
-<div class="sec anim">📋 Participación esta semana</div>
+<div class="sec anim" id="part-sec">📋 Participación esta semana</div>
 <div class="card anim" style="animation-delay:.05s">
   <div class="part-grid" id="part-grid"></div>
   <div style="margin-top:.75rem;font-size:11px;color:var(--gray3);text-align:center" id="part-summary">—</div>
@@ -356,7 +366,7 @@ body{font-family:'DM Sans',sans-serif;background:var(--off);min-height:100vh;pad
 </div>
 
 <!-- RESULTADOS -->
-<div class="sec anim" style="animation-delay:.19s">🏆 Resultados de la quincena</div>
+<div class="sec anim" id="results-sec" style="animation-delay:.19s">🏆 Resultados de la quincena</div>
 <div class="results-board anim" style="animation-delay:.2s" id="results-board">
   <div class="rb-title">Tabla de puntos</div>
   <div style="color:var(--gray3);font-size:12px;text-align:center;padding:.5rem">
@@ -381,6 +391,7 @@ function fmtPesos(n) {
 // ── Requiere rol B o ADMIN (se verifica tras cargar usuarios) ──
 let sess = null;
 let TEAM = [];
+let currentWeekKey = null; // semana (lunes) seleccionada para ver/generar resultados
 
 (async () => {
   await MC_Users.init();
@@ -391,8 +402,55 @@ let TEAM = [];
     return;
   }
   TEAM = Object.entries(MC_USERS).filter(([,u])=>u.rol!=='ADMIN').map(([n,u])=>({name:n,...u}));
+  await buildPeriodSelector();
   init();
 })();
+
+// ── Selector de periodo (semana) ───────────────────────────────
+function weekLabel(weekKey) {
+  const [y,m,d] = weekKey.split('-').map(Number);
+  const mon = new Date(y, m-1, d);
+  const sun = new Date(mon); sun.setDate(mon.getDate() + 6);
+  const fmt = x => `${x.getDate()} ${MC_UI.MONTHS_ES[x.getMonth()]}`;
+  return `${fmt(mon)} – ${fmt(sun)}`;
+}
+
+async function buildPeriodSelector() {
+  const weeks = MC_DB.recentWeeks(6); // [actual, -1, -2, ... -5]
+  const counts = await Promise.all(weeks.map(w => MC_DB.getNoms(w)));
+
+  const sel = document.getElementById('period-select');
+  sel.innerHTML = weeks.map((w,i) => {
+    const n = counts[i].length;
+    const tag = i === 0 ? ' (actual)' : '';
+    const info = n > 0 ? ` — ${n} nominación${n!==1?'es':''}` : ' — sin datos';
+    return `<option value="${w}">${weekLabel(w)}${tag}${info}</option>`;
+  }).join('');
+
+  // Default: la semana actual si ya tiene nominaciones; si no, la más reciente con datos
+  let defaultIdx = 0;
+  if (counts[0].length === 0) {
+    const idx = counts.findIndex((c,i) => i > 0 && c.length > 0);
+    if (idx > -1) defaultIdx = idx;
+  }
+  currentWeekKey = weeks[defaultIdx];
+  sel.value = currentWeekKey;
+}
+
+function onPeriodChange() {
+  currentWeekKey = document.getElementById('period-select').value;
+  document.getElementById('results-board').innerHTML =
+    '<div class="rb-title">Tabla de puntos</div><div style="color:var(--gray3);font-size:12px;text-align:center;padding:.5rem">Pulsa "Generar resultados" para calcular</div>';
+  document.getElementById('wa-preview').style.display = 'none';
+  document.getElementById('copy-wa').style.display = 'none';
+  init();
+}
+
+function updatePeriodLabels() {
+  const lbl = weekLabel(currentWeekKey);
+  document.getElementById('part-sec').innerHTML    = `📋 Participación · ${lbl}`;
+  document.getElementById('results-sec').innerHTML = `🏆 Resultados · ${lbl}`;
+}
 
 // teamA / teamB se calculan dentro de init() cuando TEAM ya está lleno
 function getTeamA() { return TEAM.filter(u=>u.rol==='A'); }
@@ -560,11 +618,28 @@ function renderNoms() {
 }
 
 async function init() {
+  updatePeriodLabels();
   document.getElementById('part-grid').innerHTML =
     '<div style="grid-column:span 3;text-align:center;color:var(--gray3);font-size:12px;padding:.5rem">Cargando datos...</div>';
+
+  // Resetear estado de ventas — evita arrastrar datos de otra semana al cambiar de periodo
+  salesLoaded          = false;
+  salesServiceRev      = {};
+  salesProductRev      = {};
+  salesMembs           = {};
+  salesMembTotal       = 0;
+  salesTargetMemb      = 30;
+  salesTargetMembValor = 15;
+  document.getElementById('inp-memb-total').value    = 0;
+  document.getElementById('target-memb').value       = 30;
+  document.getElementById('target-memb-valor').value = 15;
+  const al0 = document.getElementById('sales-alert');
+  al0.className   = 'alert aa';
+  al0.textContent = 'Sin datos guardados — el scoring usará valores de referencia.';
+
   try {
     const [rA, rB, ns, sv, prizes] = await Promise.all([
-      MC_DB.getRespA(), MC_DB.getRespB(), MC_DB.getNoms(), MC_DB.getSales(), MC_DB.getPrizes()
+      MC_DB.getRespA(currentWeekKey), MC_DB.getRespB(currentWeekKey), MC_DB.getNoms(currentWeekKey), MC_DB.getSales(currentWeekKey), MC_DB.getPrizes(currentWeekKey)
     ]);
     [respA, respB, noms] = [rA, rB, ns];
 
@@ -774,7 +849,7 @@ async function guardarVentas(btn) {
     await MC_DB.saveSales({
       serviceRevenue, productRevenue, membs, membTotal,
       targetMemb: salesTargetMemb, targetMembValor: salesTargetMembValor
-    });
+    }, currentWeekKey);
     salesServiceRev  = serviceRevenue;
     salesProductRev  = productRevenue;
     salesMembs       = membs;
@@ -900,14 +975,14 @@ function generate() {
     rankHtml(rankA, 'Pista A — Estilistas') +
     rankHtml(rankB, 'Pista B — Operación') +
     (topNoms.length ? `<div style="margin-top:1rem;padding-top:.875rem;border-top:.5px solid #333">
-      <div style="font-size:10px;color:var(--gray3);margin-bottom:.375rem">⭐ Más nominada${topNoms.length>1?' (empate)':''} esta semana</div>
+      <div style="font-size:10px;color:var(--gray3);margin-bottom:.375rem">⭐ Más nominada${topNoms.length>1?' (empate)':''} · ${weekLabel(currentWeekKey)}</div>
       ${topNoms.map(([name,cnt])=>`<div style="font-size:13px;font-weight:600;color:var(--gold)">⭐ ${name} — ${cnt} nominación${cnt>1?'es':''}</div>`).join('')}
     </div>` : '') +
     bkHtml;
 
   const msg =
 `🏆 *MONDOU CHAMPIONS*
-${new Date().toLocaleDateString('es-MX',{day:'numeric',month:'long',year:'numeric'})}
+Semana: ${weekLabel(currentWeekKey)}
 
 ━━━━━━━━━━━━━━━━━━━
 ✂️ *PISTA A — Estilistas*
