@@ -165,7 +165,17 @@ body{font-family:'DM Sans',sans-serif;background:var(--off);min-height:100vh;pad
     <span class="bonus-lbl">Semana a revisar / generar</span>
     <select id="period-select" style="flex:1.4;font-size:12px;padding:6px 8px;border:.5px solid #E8E6E0;border-radius:8px;background:var(--off);max-width:230px" onchange="onPeriodChange()"></select>
   </div>
-  <div style="font-size:10.5px;color:var(--gray3);margin-top:.5rem">Si una semana ya pasó y sigue mostrando datos, elígela aquí — los datos no se pierden, solo hay que seleccionar la semana correcta.</div>
+  <div class="bonus-row" style="margin-top:.5rem;margin-bottom:0">
+    <label class="bonus-lbl" style="display:flex;align-items:center;gap:6px;cursor:pointer">
+      <input type="checkbox" id="quincena-toggle" onchange="onQuincenaToggle()" style="width:15px;height:15px">
+      📊 Combinar con otra semana (modo quincena)
+    </label>
+  </div>
+  <div class="bonus-row" id="period2-row" style="display:none;margin-top:.5rem;margin-bottom:0">
+    <span class="bonus-lbl">+ Semana 2</span>
+    <select id="period-select-2" style="flex:1.4;font-size:12px;padding:6px 8px;border:.5px solid #E8E6E0;border-radius:8px;background:var(--off);max-width:230px" onchange="onPeriodChange()"></select>
+  </div>
+  <div style="font-size:10.5px;color:var(--gray3);margin-top:.5rem" id="period-hint">Si una semana ya pasó y sigue mostrando datos, elígela aquí — los datos no se pierden, solo hay que seleccionar la semana correcta.</div>
 </div>
 
 <!-- PARTICIPACIÓN -->
@@ -391,7 +401,9 @@ function fmtPesos(n) {
 // ── Requiere rol B o ADMIN (se verifica tras cargar usuarios) ──
 let sess = null;
 let TEAM = [];
-let currentWeekKey = null; // semana (lunes) seleccionada para ver/generar resultados
+let currentWeekKey  = null; // semana (lunes) seleccionada para ver/generar resultados
+let currentWeekKey2 = null; // segunda semana (modo quincena)
+let quincenaMode    = false;
 
 (async () => {
   await MC_Users.init();
@@ -406,7 +418,7 @@ let currentWeekKey = null; // semana (lunes) seleccionada para ver/generar resul
   init();
 })();
 
-// ── Selector de periodo (semana) ───────────────────────────────
+// ── Selector de periodo (semana / quincena) ────────────────────
 function weekLabel(weekKey) {
   const [y,m,d] = weekKey.split('-').map(Number);
   const mon = new Date(y, m-1, d);
@@ -415,41 +427,124 @@ function weekLabel(weekKey) {
   return `${fmt(mon)} – ${fmt(sun)}`;
 }
 
+// Rango combinado de 2 semanas (no necesitan estar en orden)
+function quincenaLabel(w1, w2) {
+  const [a, b] = [w1, w2].sort(); // 'YYYY-MM-DD' ordena cronológicamente como string
+  const [y1,m1,d1] = a.split('-').map(Number);
+  const [y2,m2,d2] = b.split('-').map(Number);
+  const mon = new Date(y1, m1-1, d1);
+  const sun = new Date(y2, m2-1, d2); sun.setDate(sun.getDate() + 6);
+  const fmt = x => `${x.getDate()} ${MC_UI.MONTHS_ES[x.getMonth()]}`;
+  return `${fmt(mon)} – ${fmt(sun)}`;
+}
+
+function currentPeriodLabel() {
+  return (quincenaMode && currentWeekKey2) ? quincenaLabel(currentWeekKey, currentWeekKey2) : weekLabel(currentWeekKey);
+}
+
 async function buildPeriodSelector() {
   const weeks = MC_DB.recentWeeks(6); // [actual, -1, -2, ... -5]
   const counts = await Promise.all(weeks.map(w => MC_DB.getNoms(w)));
 
-  const sel = document.getElementById('period-select');
-  sel.innerHTML = weeks.map((w,i) => {
+  const optsHtml = weeks.map((w,i) => {
     const n = counts[i].length;
     const tag = i === 0 ? ' (actual)' : '';
     const info = n > 0 ? ` — ${n} nominación${n!==1?'es':''}` : ' — sin datos';
     return `<option value="${w}">${weekLabel(w)}${tag}${info}</option>`;
   }).join('');
 
-  // Default: la semana actual si ya tiene nominaciones; si no, la más reciente con datos
+  document.getElementById('period-select').innerHTML   = optsHtml;
+  document.getElementById('period-select-2').innerHTML = optsHtml;
+
+  // Default semana 1: la actual si ya tiene nominaciones; si no, la más reciente con datos
   let defaultIdx = 0;
   if (counts[0].length === 0) {
     const idx = counts.findIndex((c,i) => i > 0 && c.length > 0);
     if (idx > -1) defaultIdx = idx;
   }
   currentWeekKey = weeks[defaultIdx];
-  sel.value = currentWeekKey;
+  document.getElementById('period-select').value = currentWeekKey;
+
+  // Default semana 2 (modo quincena): la semana siguiente cronológicamente,
+  // o la anterior si la 1 ya es la más reciente
+  const idx2 = defaultIdx > 0 ? defaultIdx - 1 : 1;
+  currentWeekKey2 = weeks[Math.min(Math.max(idx2,0), weeks.length-1)];
+  document.getElementById('period-select-2').value = currentWeekKey2;
 }
 
-function onPeriodChange() {
-  currentWeekKey = document.getElementById('period-select').value;
+function resetResultsBoard() {
   document.getElementById('results-board').innerHTML =
     '<div class="rb-title">Tabla de puntos</div><div style="color:var(--gray3);font-size:12px;text-align:center;padding:.5rem">Pulsa "Generar resultados" para calcular</div>';
   document.getElementById('wa-preview').style.display = 'none';
   document.getElementById('copy-wa').style.display = 'none';
+}
+
+function onPeriodChange() {
+  currentWeekKey  = document.getElementById('period-select').value;
+  currentWeekKey2 = document.getElementById('period-select-2').value;
+  resetResultsBoard();
+  init();
+}
+
+function onQuincenaToggle() {
+  quincenaMode = document.getElementById('quincena-toggle').checked;
+  document.getElementById('period2-row').style.display = quincenaMode ? 'flex' : 'none';
+  resetResultsBoard();
   init();
 }
 
 function updatePeriodLabels() {
-  const lbl = weekLabel(currentWeekKey);
-  document.getElementById('part-sec').innerHTML    = `📋 Participación · ${lbl}`;
-  document.getElementById('results-sec').innerHTML = `🏆 Resultados · ${lbl}`;
+  const lbl    = currentPeriodLabel();
+  const prefix = (quincenaMode && currentWeekKey2) ? 'Quincena ' : '';
+  document.getElementById('part-sec').innerHTML    = `📋 Participación · ${prefix}${lbl}`;
+  document.getElementById('results-sec').innerHTML = `🏆 Resultados · ${prefix}${lbl}`;
+
+  const hint = document.getElementById('period-hint');
+  if (quincenaMode && currentWeekKey === currentWeekKey2) {
+    hint.innerHTML = '⚠️ Elegiste la misma semana dos veces — selecciona dos semanas distintas para sumar correctamente.';
+    hint.style.color = 'var(--red)';
+  } else {
+    hint.innerHTML = 'Si una semana ya pasó y sigue mostrando datos, elígela aquí — los datos no se pierden, solo hay que seleccionar la semana correcta.';
+    hint.style.color = 'var(--gray3)';
+  }
+}
+
+// ── Combinar datos de 2 semanas (modo quincena) ────────────────
+// Promedia las respuestas de autoevaluación (B2) por persona
+function mergeResp(a, b, fields) {
+  a = a || {}; b = b || {};
+  const out = {};
+  new Set([...Object.keys(a), ...Object.keys(b)]).forEach(name => {
+    const ra = a[name], rb = b[name];
+    if (ra && rb) {
+      const merged = { ...ra };
+      fields.forEach(f => { merged[f] = ((ra[f]||0) + (rb[f]||0)) / 2; });
+      out[name] = merged;
+    } else {
+      out[name] = ra || rb;
+    }
+  });
+  return out;
+}
+
+// Suma ventas/membresías de 2 semanas
+function mergeSales(sv1, sv2) {
+  if (!sv1 && !sv2) return null;
+  sv1 = sv1 || {}; sv2 = sv2 || {};
+  const out = { serviceRevenue:{}, productRevenue:{}, membs:{}, membTotal:0 };
+  TEAM.forEach(u => {
+    const name = u.name;
+    out.serviceRevenue[name] = (sv1.serviceRevenue?.[name]||0) + (sv2.serviceRevenue?.[name]||0);
+    out.productRevenue[name] = (sv1.productRevenue?.[name]||0) + (sv2.productRevenue?.[name]||0);
+    const m1 = sv1.membs?.[name] || {}, m2 = sv2.membs?.[name] || {};
+    out.membs[name] = {};
+    MEMB_TYPES.forEach(t => { out.membs[name][t] = (m1[t]||0) + (m2[t]||0); });
+  });
+  out.membTotal = (sv1.membTotal||0) + (sv2.membTotal||0);
+  // Metas: son de quincena, no se suman — se toma la que esté configurada
+  out.targetMemb      = sv1.targetMemb      ?? sv2.targetMemb;
+  out.targetMembValor = sv1.targetMembValor ?? sv2.targetMembValor;
+  return out;
 }
 
 // teamA / teamB se calculan dentro de init() cuando TEAM ya está lleno
@@ -638,9 +733,22 @@ async function init() {
   al0.textContent = 'Sin datos guardados — el scoring usará valores de referencia.';
 
   try {
-    const [rA, rB, ns, sv, prizes] = await Promise.all([
-      MC_DB.getRespA(currentWeekKey), MC_DB.getRespB(currentWeekKey), MC_DB.getNoms(currentWeekKey), MC_DB.getSales(currentWeekKey), MC_DB.getPrizes(currentWeekKey)
-    ]);
+    let rA, rB, ns, sv, prizes;
+    if (quincenaMode && currentWeekKey2 && currentWeekKey2 !== currentWeekKey) {
+      const [rA1, rB1, ns1, sv1, pz1, rA2, rB2, ns2, sv2, pz2] = await Promise.all([
+        MC_DB.getRespA(currentWeekKey),  MC_DB.getRespB(currentWeekKey),  MC_DB.getNoms(currentWeekKey),  MC_DB.getSales(currentWeekKey),  MC_DB.getPrizes(currentWeekKey),
+        MC_DB.getRespA(currentWeekKey2), MC_DB.getRespB(currentWeekKey2), MC_DB.getNoms(currentWeekKey2), MC_DB.getSales(currentWeekKey2), MC_DB.getPrizes(currentWeekKey2),
+      ]);
+      rA = mergeResp(rA1, rA2, ['q1','q2','q3']);
+      rB = mergeResp(rB1, rB2, ['q1','q2','q3','q4']);
+      ns = [...ns1, ...ns2];
+      sv = mergeSales(sv1, sv2);
+      prizes = { targetMemb: pz1?.targetMemb ?? pz2?.targetMemb, targetMembValor: pz1?.targetMembValor ?? pz2?.targetMembValor };
+    } else {
+      [rA, rB, ns, sv, prizes] = await Promise.all([
+        MC_DB.getRespA(currentWeekKey), MC_DB.getRespB(currentWeekKey), MC_DB.getNoms(currentWeekKey), MC_DB.getSales(currentWeekKey), MC_DB.getPrizes(currentWeekKey)
+      ]);
+    }
     [respA, respB, noms] = [rA, rB, ns];
 
     // Pre-poblar metas desde prizes (configuradas en config.html)
@@ -844,12 +952,17 @@ async function guardarVentas(btn) {
   salesTargetMemb          = Math.max(1, parseInt(document.getElementById('target-memb').value) || 30);
   salesTargetMembValor     = Math.max(1, parseInt(document.getElementById('target-memb-valor').value) || 15);
 
+  // En modo quincena se guarda en la semana más reciente de las 2 (no se duplica/sobreescribe la ya cerrada)
+  const targetWeek = (quincenaMode && currentWeekKey2)
+    ? [currentWeekKey, currentWeekKey2].sort().pop()
+    : currentWeekKey;
+
   btn.disabled = true; btn.textContent = 'Guardando...';
   try {
     await MC_DB.saveSales({
       serviceRevenue, productRevenue, membs, membTotal,
       targetMemb: salesTargetMemb, targetMembValor: salesTargetMembValor
-    }, currentWeekKey);
+    }, targetWeek);
     salesServiceRev  = serviceRevenue;
     salesProductRev  = productRevenue;
     salesMembs       = membs;
@@ -975,14 +1088,14 @@ function generate() {
     rankHtml(rankA, 'Pista A — Estilistas') +
     rankHtml(rankB, 'Pista B — Operación') +
     (topNoms.length ? `<div style="margin-top:1rem;padding-top:.875rem;border-top:.5px solid #333">
-      <div style="font-size:10px;color:var(--gray3);margin-bottom:.375rem">⭐ Más nominada${topNoms.length>1?' (empate)':''} · ${weekLabel(currentWeekKey)}</div>
+      <div style="font-size:10px;color:var(--gray3);margin-bottom:.375rem">⭐ Más nominada${topNoms.length>1?' (empate)':''} · ${currentPeriodLabel()}</div>
       ${topNoms.map(([name,cnt])=>`<div style="font-size:13px;font-weight:600;color:var(--gold)">⭐ ${name} — ${cnt} nominación${cnt>1?'es':''}</div>`).join('')}
     </div>` : '') +
     bkHtml;
 
   const msg =
 `🏆 *MONDOU CHAMPIONS*
-Semana: ${weekLabel(currentWeekKey)}
+${quincenaMode && currentWeekKey2 ? 'Quincena' : 'Semana'}: ${currentPeriodLabel()}
 
 ━━━━━━━━━━━━━━━━━━━
 ✂️ *PISTA A — Estilistas*
