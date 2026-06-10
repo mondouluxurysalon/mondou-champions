@@ -20,8 +20,10 @@ const db = firebase.firestore();
 // ─────────────────────────────────────────────────────────────
 const MC_DB = {
 
-  _weekKey() {
-    const d = new Date(), dow = d.getDay();
+  // Si se pasa `date`, calcula la weekKey de ESA fecha (lunes de su semana).
+  // Sin argumento, usa hoy → comportamiento original.
+  _weekKey(date) {
+    const d = date ? new Date(date) : new Date(), dow = d.getDay();
     const mon = new Date(d);
     mon.setDate(d.getDate() - (dow === 0 ? 6 : dow - 1));
     // Usar fecha LOCAL (no toISOString que es UTC) para evitar desfase de zona horaria
@@ -29,6 +31,19 @@ const MC_DB = {
     const m  = String(mon.getMonth() + 1).padStart(2, '0');
     const dy = String(mon.getDate()).padStart(2, '0');
     return `${y}-${m}-${dy}`;
+  },
+
+  // Lista de weekKeys recientes, de la semana actual hacia atrás.
+  // recentWeeks(6) → [semana actual, -1 sem, -2 sem, ... -5 sem]
+  recentWeeks(n = 6) {
+    const out = [];
+    const now = new Date();
+    for (let i = 0; i < n; i++) {
+      const d = new Date(now);
+      d.setDate(now.getDate() - i * 7);
+      out.push(this._weekKey(d));
+    }
+    return out;
   },
 
   saveRespA(data) {
@@ -52,38 +67,39 @@ const MC_DB = {
       .set({ ...data, week });
   },
 
-  async getRespA() {
+  // `week` opcional → permite consultar una semana específica (selector de periodo en panel.html)
+  async getRespA(week) {
     const snap = await db.collection('responses_pa')
-      .where('week', '==', this._weekKey()).get();
+      .where('week', '==', week || this._weekKey()).get();
     const out = {};
     snap.forEach(d => { out[d.data().name] = d.data(); });
     return out;
   },
 
-  async getRespB() {
+  async getRespB(week) {
     const snap = await db.collection('responses_pb')
-      .where('week', '==', this._weekKey()).get();
+      .where('week', '==', week || this._weekKey()).get();
     const out = {};
     snap.forEach(d => { out[d.data().name] = d.data(); });
     return out;
   },
 
-  async getNoms() {
+  async getNoms(week) {
     const snap = await db.collection('nominations')
-      .where('week', '==', this._weekKey()).get();
+      .where('week', '==', week || this._weekKey()).get();
     return snap.docs.map(d => d.data());
   },
 
-  saveSales(data) {
-    const week = this._weekKey();
+  saveSales(data, week) {
+    const w = week || this._weekKey();
     return db.collection('sales')
-      .doc(`sales_${week}`)
-      .set({ ...data, week });
+      .doc(`sales_${w}`)
+      .set({ ...data, week: w });
   },
 
-  async getSales() {
+  async getSales(week) {
     const snap = await db.collection('sales')
-      .doc(`sales_${this._weekKey()}`)
+      .doc(`sales_${week || this._weekKey()}`)
       .get();
     return snap.exists ? snap.data() : null;
   },
@@ -106,16 +122,16 @@ const MC_DB = {
   },
 
   // ── Premios de la quincena (Admin configura) ─────────────────
-  savePrizes(data) {
-    const week = this._weekKey();
+  savePrizes(data, week) {
+    const w = week || this._weekKey();
     return db.collection('prizes')
-      .doc(`prizes_${week}`)
-      .set({ ...data, week });
+      .doc(`prizes_${w}`)
+      .set({ ...data, week: w });
   },
 
-  async getPrizes() {
+  async getPrizes(week) {
     const snap = await db.collection('prizes')
-      .doc(`prizes_${this._weekKey()}`)
+      .doc(`prizes_${week || this._weekKey()}`)
       .get();
     return snap.exists ? snap.data() : null;
   },
