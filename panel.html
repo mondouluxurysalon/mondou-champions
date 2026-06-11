@@ -239,6 +239,7 @@ body{font-family:'DM Sans',sans-serif;background:var(--off);min-height:100vh;pad
   <!-- PREVIEW: aparece tras procesar -->
   <div class="tbhs-preview" id="tbhs-preview">
     <div id="tbhs-unmatched-area"></div>
+    <div id="tbhs-memb-total-banner" class="tbhs-section-title" style="display:none"></div>
 
     <div class="tbhs-section-title">✅ Resumen filtrado por persona</div>
     <div style="overflow-x:auto">
@@ -372,6 +373,12 @@ body{font-family:'DM Sans',sans-serif;background:var(--off);min-height:100vh;pad
     <span class="bonus-lbl">⚡ Meta valor ponderado Pista B (pts — default 15)</span>
     <input class="bonus-in" type="number" id="target-memb-valor" value="15" min="1" placeholder="Ej: 15">
   </div>
+
+  <div style="height:.5px;background:#F0EDE8;margin:.875rem 0"></div>
+  <div style="font-size:10px;font-weight:700;color:var(--gray2);text-transform:uppercase;letter-spacing:.08em;margin-bottom:.5rem">
+    🎯 Meta de ventas semanal por salón (Pista B — sin esto no hay medalla para operativo)
+  </div>
+  <div id="target-ventas-salon-list"><!-- JS --></div>
   <button class="gen-btn" onclick="guardarVentas(this)" style="margin-top:.5rem">💾 Guardar datos de ventas</button>
 </div>
 
@@ -542,8 +549,9 @@ function mergeSales(sv1, sv2) {
   });
   out.membTotal = (sv1.membTotal||0) + (sv2.membTotal||0);
   // Metas: son de quincena, no se suman — se toma la que esté configurada
-  out.targetMemb      = sv1.targetMemb      ?? sv2.targetMemb;
-  out.targetMembValor = sv1.targetMembValor ?? sv2.targetMembValor;
+  out.targetMemb       = sv1.targetMemb       ?? sv2.targetMemb;
+  out.targetMembValor  = sv1.targetMembValor  ?? sv2.targetMembValor;
+  out.targetVentasSalon = sv1.targetVentasSalon ?? sv2.targetVentasSalon;
   return out;
 }
 
@@ -565,6 +573,7 @@ const MEMB_LABEL  = {bronce:'Bron.',silver:'Silv.',gold:'Gold',black:'Black',ada
 const MEMB_WEIGHTS = {bronce:1, silver:2, gold:3, black:5, adam:8};  // valor ponderado por tipo
 
 let salesTargetMembValor = 15;  // meta de valor ponderado para Pista B (configurable)
+let salesTargetVentas = {};     // meta de ventas $ semanal por salón (gate de medalla Pista B)
 
 // ── Tabla editable de ventas por estilista ────────────────────
 function buildVentasTable() {
@@ -602,6 +611,48 @@ function buildBonusSection() {
       <input class="bonus-in" type="number" id="bonus-${u.name}" min="0" max="50" value="0" placeholder="0–50">
     </div>`
   ).join('');
+}
+
+// ── Meta de ventas $ semanal por salón (gate de medalla Pista B) ──
+function salonId(salon) { return String(salon).replace(/\s+/g, ''); }
+
+function getSalons() { return [...new Set(TEAM.map(u => u.salon))]; }
+
+function buildTargetVentasSalon() {
+  document.getElementById('target-ventas-salon-list').innerHTML = getSalons().map(salon => {
+    const defaultTarget = getTeamA().filter(u => u.salon === salon)
+      .reduce((sum, u) => sum + MC_Users.calcMeta(MC_USERS[u.name]?.piso || 5000), 0);
+    const val = salesTargetVentas[salon] ?? defaultTarget;
+    return `<div class="bonus-row">
+      <span class="bonus-lbl">${salon}</span>
+      <input class="bonus-in" type="number" id="target-ventas-${salonId(salon)}" value="${val}" min="0" step="1000">
+    </div>`;
+  }).join('');
+}
+
+// ── Ventas colectivas del salón (servicios + productos, Pista A) ──
+function salonRevenue(salon) {
+  return getTeamA().filter(u => u.salon === salon)
+    .reduce((sum, u) => sum + (salesServiceRev[u.name] || 0) + (salesProductRev[u.name] || 0), 0);
+}
+
+// Número de semanas del periodo en revisión (1 normal, 2 en modo quincena)
+function periodWeeks() {
+  return (quincenaMode && currentWeekKey2 && currentWeekKey2 !== currentWeekKey) ? 2 : 1;
+}
+
+// ── ¿Llegó a su meta de ventas? (gate de medalla) ─────────────
+function metaCumplida(name, rol) {
+  if (!salesLoaded) return true; // sin datos reales aún, no aplicar gate
+  if (rol === 'A') {
+    const total = (salesServiceRev[name] || 0) + (salesProductRev[name] || 0);
+    const meta  = MC_Users.calcMeta(MC_USERS[name]?.piso || 5000) * periodWeeks();
+    return total >= meta;
+  }
+  const salon  = MC_USERS[name]?.salon;
+  const target = (salesTargetVentas[salon] || 0) * periodWeeks();
+  if (target <= 0) return true; // sin meta configurada para ese salón
+  return salonRevenue(salon) >= target;
 }
 
 // ── Tabla de membresías individuales Pista B ──────────────────
@@ -725,6 +776,7 @@ async function init() {
   salesMembTotal       = 0;
   salesTargetMemb      = 30;
   salesTargetMembValor = 15;
+  salesTargetVentas    = {};
   document.getElementById('inp-memb-total').value    = 0;
   document.getElementById('target-memb').value       = 30;
   document.getElementById('target-memb-valor').value = 15;
@@ -765,6 +817,7 @@ async function init() {
     buildVentasTable();
     buildVentasBTable();
     buildBonusSection();
+    buildTargetVentasSalon();
 
     if (sv) {
       salesServiceRev      = sv.serviceRevenue || sv.commissions || {};
@@ -773,11 +826,13 @@ async function init() {
       salesMembTotal       = sv.membTotal      || 0;
       salesTargetMemb      = sv.targetMemb     || prizes?.targetMemb     || 30;
       salesTargetMembValor = sv.targetMembValor|| prizes?.targetMembValor|| 15;
+      salesTargetVentas    = sv.targetVentasSalon || {};
       salesLoaded          = true;
 
       document.getElementById('target-memb').value       = salesTargetMemb;
       document.getElementById('target-memb-valor').value = salesTargetMembValor;
       document.getElementById('inp-memb-total').value    = salesMembTotal;
+      buildTargetVentasSalon();
 
       // Poblar inputs Pista A
       getTeamA().forEach(u => {
@@ -952,6 +1007,12 @@ async function guardarVentas(btn) {
   salesTargetMemb          = Math.max(1, parseInt(document.getElementById('target-memb').value) || 30);
   salesTargetMembValor     = Math.max(1, parseInt(document.getElementById('target-memb-valor').value) || 15);
 
+  const targetVentasSalon = {};
+  getSalons().forEach(salon => {
+    targetVentasSalon[salon] = Math.max(0, parseInt(document.getElementById(`target-ventas-${salonId(salon)}`)?.value) || 0);
+  });
+  salesTargetVentas = targetVentasSalon;
+
   // En modo quincena se guarda en la semana más reciente de las 2 (no se duplica/sobreescribe la ya cerrada)
   const targetWeek = (quincenaMode && currentWeekKey2)
     ? [currentWeekKey, currentWeekKey2].sort().pop()
@@ -961,7 +1022,8 @@ async function guardarVentas(btn) {
   try {
     await MC_DB.saveSales({
       serviceRevenue, productRevenue, membs, membTotal,
-      targetMemb: salesTargetMemb, targetMembValor: salesTargetMembValor
+      targetMemb: salesTargetMemb, targetMembValor: salesTargetMembValor,
+      targetVentasSalon
     }, targetWeek);
     salesServiceRev  = serviceRevenue;
     salesProductRev  = productRevenue;
@@ -994,8 +1056,8 @@ function ticketPts(name, rol) {
 }
 
 // ── Calcular puntos completos con desglose ───────────────────
-// Pesos Pista A: B1 60%  · B2 25% · B3 15%
-// Pesos Pista B: B1 45%  · B2 25% · B3 30%  (más peso a equipo/nominaciones)
+// Pesos Pista A y B: B1 (ventas) 90% · B2 (desempeño) 5% · B3 (equipo) 5%
+// Sin medalla si no se llega a la meta de ventas (ver metaCumplida)
 function scoreDetail(name, rol) {
   const nomCount = noms.filter(n => n.nominee === name).length;
   const hasForms = rol === 'A' ? !!respA[name] : !!respB[name];
@@ -1006,15 +1068,15 @@ function scoreDetail(name, rol) {
     const r = respA[name] || {};
     b2      = Math.round(((r.q1||0)/3)*75 + ((r.q2||0)/5)*100 + ((r.q3||0)/4)*75);
     b3used  = rawB3;
-    total   = Math.round(b1*0.60 + b2*0.25 + b3used*0.15);
+    total   = Math.round(b1*0.90 + b2*0.05 + b3used*0.05);
   } else {
     const r = respB[name] || {};
     const bonus = parseInt(document.getElementById(`bonus-${name}`)?.value) || 0;
     b2      = Math.round(((r.q1||0)/3)*75 + ((r.q2||0)/5)*100 + ((r.q3||0)/4)*75 + ((r.q4||0)/4)*50);
     b3used  = Math.min(rawB3 + bonus, 200);
-    total   = Math.round(b1*0.45 + b2*0.25 + b3used*0.30);
+    total   = Math.round(b1*0.90 + b2*0.05 + b3used*0.05);
   }
-  return { b1, b2, b3: rawB3, total };
+  return { b1, b2, b3: rawB3, total, metaOk: metaCumplida(name, rol) };
 }
 
 function score(name, rol) { return scoreDetail(name, rol).total; }
@@ -1037,21 +1099,31 @@ function generate() {
   const topNoms = nomTally.filter(([,c]) => c === topNomCount); // todas las empatadas
 
   // ── Rankings ──
-  const rankHtml = (rank, pista) => `
+  // Las medallas (🥇🥈🥉...) solo se asignan a quienes llegaron a su meta de ventas;
+  // quienes no, se ven con su puntaje real pero marcadas como "META NO ALCANZADA"
+  // y el siguiente lugar en el podio pasa a quien sí cumplió.
+  const rankHtml = (rank, pista) => {
+    let medalIdx = 0;
+    return `
     <div class="rb-title">${pista}</div>
-    ${rank.map(({name,color,total,b1,b2,b3},i)=>`
+    ${rank.map(({name,color,total,b1,b2,b3,metaOk})=>{
+      const medal = metaOk ? (MEDALS[medalIdx++] || '·') : '⚠️';
+      return `
     <div class="rb-row">
-      <span class="rb-medal">${MEDALS[i]||'·'}</span>
+      <span class="rb-medal"${!metaOk?' title="Meta de ventas no alcanzada — sin premio"':''}>${medal}</span>
       <div style="flex:1">
         <div style="display:flex;align-items:center;gap:6px">
           <span class="rb-name">${name}</span>
           ${noms.filter(n=>n.nominee===name).length>0?`<span style="font-size:10px;color:#C9963B">⭐ ${noms.filter(n=>n.nominee===name).length}</span>`:''}
+          ${!metaOk?`<span style="font-size:9px;color:var(--red);font-weight:700;letter-spacing:.03em">META NO ALCANZADA</span>`:''}
         </div>
         <div style="font-size:9.5px;color:var(--gray3);margin-top:2px">B1:${b1} · B2:${b2} · B3:${b3}</div>
         <div class="mini-bar"><div class="mini-fill" style="width:${total/maxPts*100}%;background:${color}"></div></div>
       </div>
       <span class="rb-pts" style="color:${color}">${total}</span>
-    </div>`).join('')}`;
+    </div>`;
+    }).join('')}`;
+  };
 
   // ── Tabla de desglose B1/B2/B3 ──
   const allRank = [...rankA, ...rankB];
@@ -1066,10 +1138,11 @@ function generate() {
           <th>B2 Desempeño</th>
           <th>B3 Equipo</th>
           <th>Total</th>
+          <th>Meta</th>
         </tr>
       </thead>
       <tbody>
-        ${allRank.map(({name,color,total,b1,b2,b3})=>`
+        ${allRank.map(({name,color,total,b1,b2,b3,metaOk})=>`
         <tr>
           <td><span style="display:inline-flex;align-items:center;gap:5px">
             <span style="width:14px;height:14px;border-radius:50%;background:${color};display:inline-block;flex-shrink:0"></span>
@@ -1079,6 +1152,7 @@ function generate() {
           <td>${b2}</td>
           <td>${b3}</td>
           <td style="font-weight:700;color:${color}">${total}</td>
+          <td title="${metaOk?'Meta de ventas alcanzada':'Meta de ventas no alcanzada — sin premio'}">${metaOk?'✅':'⚠️'}</td>
         </tr>`).join('')}
       </tbody>
     </table>
@@ -1093,6 +1167,14 @@ function generate() {
     </div>` : '') +
     bkHtml;
 
+  const rankLines = (rank) => {
+    let medalIdx = 0;
+    return rank.map(({name,total,metaOk}) => {
+      const medal = metaOk ? (MEDALS[medalIdx++] || '·') : '⚠️';
+      return `${medal} *${name}* — ${total} pts${metaOk?'':' _(meta no alcanzada — sin premio)_'}`;
+    }).join('\n');
+  };
+
   const msg =
 `🏆 *MONDOU CHAMPIONS*
 ${quincenaMode && currentWeekKey2 ? 'Quincena' : 'Semana'}: ${currentPeriodLabel()}
@@ -1100,12 +1182,12 @@ ${quincenaMode && currentWeekKey2 ? 'Quincena' : 'Semana'}: ${currentPeriodLabel
 ━━━━━━━━━━━━━━━━━━━
 ✂️ *PISTA A — Estilistas*
 ━━━━━━━━━━━━━━━━━━━
-${rankA.map(({name,total},i)=>`${MEDALS[i]||'·'} *${name}* — ${total} pts`).join('\n')}
+${rankLines(rankA)}
 
 ━━━━━━━━━━━━━━━━━━━
 ⚙️ *PISTA B — Operación*
 ━━━━━━━━━━━━━━━━━━━
-${rankB.map(({name,total},i)=>`${MEDALS[i]||'·'} *${name}* — ${total} pts`).join('\n')}
+${rankLines(rankB)}
 ${topNoms.length?`\n━━━━━━━━━━━━━━━━━━━\n⭐ *MÁS NOMINADA${topNoms.length>1?' (empate)':''} *\n━━━━━━━━━━━━━━━━━━━\n${topNoms.map(([name,cnt])=>`⭐ *${name}* — ${cnt} nominación${cnt>1?'es':''}`).join('\n')}`:''}
 
 ━━━━━━━━━━━━━━━━━━━
@@ -1205,7 +1287,7 @@ async function handleTBHSDrop(files) {
   for (const file of list) {
     const fn = norm(file.name);
     const text = await readFile(file);
-    if (fn.includes('membres') || fn.includes('membresias')) {
+    if (fn.includes('membres') || fn.includes('commission')) {
       raw.membresias.push(...parseMembresíasCSV(text));
     } else if (fn.includes('servicio')) {
       const { inc, exc } = parseSrvPrdCSV(text);
@@ -1213,6 +1295,13 @@ async function handleTBHSDrop(files) {
     } else if (fn.includes('producto')) {
       const { inc, exc } = parseSrvPrdCSV(text);
       raw.productos.push(...inc, ...exc);
+    } else {
+      // Fallback: detectar por encabezados (ej. "commissions_report_*.csv")
+      const rows = parseCSV(text);
+      const hdrs = rows.length ? Object.keys(rows[0]) : [];
+      if (hdrs.includes('Agent') && hdrs.includes('Product')) {
+        raw.membresias.push(...parseMembresíasCSV(text));
+      }
     }
   }
 
@@ -1355,10 +1444,19 @@ function tbhsReaggregate() {
         </tr>`).join('')}</tbody></table>`
     : '<p style="font-size:11px;color:var(--gray3)">Sin filas excluidas.</p>';
 
+  // Total de membresías detectadas (todos los salones)
+  const membTotalAll = tbhsData.membresias.filter(r=>r.membType).length;
+  const membBanner = document.getElementById('tbhs-memb-total-banner');
+  if (membTotalAll > 0) {
+    membBanner.style.display = '';
+    membBanner.textContent = `🎫 Total membresías detectadas (todos los salones): ${membTotalAll}`;
+  } else {
+    membBanner.style.display = 'none';
+  }
+
   // Store for apply
   document.getElementById('tbhs-apply-area')._aggr = aggr;
-  document.getElementById('tbhs-apply-area')._membTotal =
-    tbhsData.membresias.filter(r=>r.membType).length;
+  document.getElementById('tbhs-apply-area')._membTotal = membTotalAll;
 }
 
 // ── Aplicar a la tabla de ventas ──────────────────────────────
